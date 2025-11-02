@@ -1,9 +1,11 @@
-import "react-native-reanimated";
-import React, { useEffect } from "react";
-import { useFonts } from "expo-font";
-import { Stack, router } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
+
 import { SystemBars } from "react-native-edge-to-edge";
+import { Stack, router, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { WidgetProvider } from "@/contexts/WidgetContext";
+import React, { useEffect } from "react";
+import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useColorScheme, Alert } from "react-native";
 import { useNetworkState } from "expo-network";
@@ -13,23 +15,23 @@ import {
   Theme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/button";
-import { WidgetProvider } from "@/contexts/WidgetContext";
+import { useFonts } from "expo-font";
+import { useAuth } from "@/hooks/useAuth";
+import { useCouple } from "@/hooks/useCouple";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export const unstable_settings = {
-  initialRouteName: "(tabs)",
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+  const { isConnected } = useNetworkState();
+  const { user, loading: authLoading } = useAuth();
+  const { couple, profile, loading: coupleLoading } = useCouple(user?.id);
+  const segments = useSegments();
 
   useEffect(() => {
     if (loaded) {
@@ -37,88 +39,87 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
+  useEffect(() => {
+    if (authLoading || coupleLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inSetupGroup = segments[0] === '(setup)';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    console.log('Navigation check:', { user: !!user, couple: !!couple, profile: !!profile, segments });
+
+    if (!user && !inAuthGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/(auth)/login');
+    } else if (user && !inTabsGroup && !inSetupGroup) {
+      // Check if user has a couple or partner email set
+      if (!couple && !profile?.partner_email && !inSetupGroup) {
+        // Redirect to partner setup
+        router.replace('/(setup)/partner');
+      } else {
+        // Redirect to main app
+        router.replace('/(tabs)/(home)');
+      }
+    }
+  }, [user, couple, profile, authLoading, coupleLoading, segments]);
+
+  useEffect(() => {
+    if (isConnected === false) {
       Alert.alert(
-        "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
+        "No Internet Connection",
+        "Please check your internet connection and try again.",
+        [{ text: "OK" }]
       );
     }
-  }, [networkState.isConnected, networkState.isInternetReachable]);
+  }, [isConnected]);
 
-  if (!loaded) {
+  if (!loaded || authLoading) {
     return null;
   }
 
-  const CustomDefaultTheme: Theme = {
-    ...DefaultTheme,
-    dark: false,
-    colors: {
-      primary: "rgb(0, 122, 255)", // System Blue
-      background: "rgb(242, 242, 247)", // Light mode background
-      card: "rgb(255, 255, 255)", // White cards/surfaces
-      text: "rgb(0, 0, 0)", // Black text for light mode
-      border: "rgb(216, 216, 220)", // Light gray for separators/borders
-      notification: "rgb(255, 59, 48)", // System Red
-    },
-  };
+  const theme: Theme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
 
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: "rgb(10, 132, 255)", // System Blue (Dark Mode)
-      background: "rgb(1, 1, 1)", // True black background for OLED displays
-      card: "rgb(28, 28, 30)", // Dark card/surface color
-      text: "rgb(255, 255, 255)", // White text for dark mode
-      border: "rgb(44, 44, 46)", // Dark gray for separators/borders
-      notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
-    },
-  };
   return (
-    <>
-      <StatusBar style="auto" animated />
-        <ThemeProvider
-          value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-        >
-          <WidgetProvider>
-            <GestureHandlerRootView>
-            <Stack>
-              {/* Main app with tabs */}
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-              {/* Modal Demo Screens */}
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: "modal",
-                  title: "Standard Modal",
-                }}
-              />
-              <Stack.Screen
-                name="formsheet"
-                options={{
-                  presentation: "formSheet",
-                  title: "Form Sheet Modal",
-                  sheetGrabberVisible: true,
-                  sheetAllowedDetents: [0.5, 0.8, 1.0],
-                  sheetCornerRadius: 20,
-                }}
-              />
-              <Stack.Screen
-                name="transparent-modal"
-                options={{
-                  presentation: "transparentModal",
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-            <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </WidgetProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <WidgetProvider>
+        <ThemeProvider value={theme}>
+          <SystemBars style="auto" />
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(setup)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="modal"
+              options={{
+                presentation: "modal",
+                headerTitle: "Modal",
+                headerRight: () => (
+                  <Button onPress={() => router.back()}>Close</Button>
+                ),
+              }}
+            />
+            <Stack.Screen
+              name="formsheet"
+              options={{
+                presentation: "formSheet",
+                headerTitle: "Form Sheet",
+                headerRight: () => (
+                  <Button onPress={() => router.back()}>Close</Button>
+                ),
+              }}
+            />
+            <Stack.Screen
+              name="transparent-modal"
+              options={{
+                presentation: "transparentModal",
+                animation: "fade",
+                headerShown: false,
+              }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
         </ThemeProvider>
-    </>
+      </WidgetProvider>
+    </GestureHandlerRootView>
   );
 }

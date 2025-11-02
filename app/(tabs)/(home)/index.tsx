@@ -11,19 +11,25 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { mockEvents } from '@/data/mockData';
 import { Event } from '@/types/Event';
 import { useTheme } from '@react-navigation/native';
+import { useAuth } from '@/hooks/useAuth';
+import { useCouple } from '@/hooks/useCouple';
+import { useEvents } from '@/hooks/useEvents';
 
 export default function CalendarScreen() {
   const theme = useTheme();
+  const { user } = useAuth();
+  const { couple } = useCouple(user?.id);
+  const { events, loading, addEvent } = useEvents(couple?.id);
   const [selectedDate, setSelectedDate] = useState('');
-  const [events, setEvents] = useState<Event[]>(mockEvents);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     type: 'date' as Event['type'],
@@ -49,32 +55,45 @@ export default function CalendarScreen() {
 
   const selectedEvents = events.filter(e => e.date === selectedDate);
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!newEvent.title || !selectedDate) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    const eventColors = {
-      vacation: '#FFD180',
-      date: '#E91E63',
-      trip: '#9C27B0',
-      event: '#F48FB1',
-    };
+    if (!user || !couple) {
+      Alert.alert('Error', 'You must be connected with a partner to add events');
+      return;
+    }
 
-    const event: Event = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      date: selectedDate,
-      type: newEvent.type,
-      description: newEvent.description,
-      color: eventColors[newEvent.type],
-    };
+    setSaving(true);
 
-    setEvents([...events, event]);
-    setShowAddModal(false);
-    setNewEvent({ title: '', type: 'date', description: '' });
-    Alert.alert('Success', 'Event added successfully!');
+    try {
+      const eventColors = {
+        vacation: '#FFD180',
+        date: '#E91E63',
+        trip: '#9C27B0',
+        event: '#F48FB1',
+      };
+
+      const event: Omit<Event, 'id'> = {
+        title: newEvent.title,
+        date: selectedDate,
+        type: newEvent.type,
+        description: newEvent.description,
+        color: eventColors[newEvent.type],
+      };
+
+      await addEvent(event, user.id);
+      setShowAddModal(false);
+      setNewEvent({ title: '', type: 'date', description: '' });
+      Alert.alert('Success', 'Event added successfully!');
+    } catch (error: any) {
+      console.error('Error adding event:', error);
+      Alert.alert('Error', error.message || 'Failed to add event');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderHeaderRight = () => (
@@ -84,6 +103,10 @@ export default function CalendarScreen() {
           Alert.alert('Select a Date', 'Please select a date first to add an event');
           return;
         }
+        if (!couple) {
+          Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
+          return;
+        }
         setShowAddModal(true);
       }}
       style={styles.headerButton}
@@ -91,6 +114,15 @@ export default function CalendarScreen() {
       <IconSymbol name="plus" color={colors.primary} size={24} />
     </Pressable>
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading events...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -212,6 +244,10 @@ export default function CalendarScreen() {
                 Alert.alert('Select a Date', 'Please select a date first to add an event');
                 return;
               }
+              if (!couple) {
+                Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
+                return;
+              }
               setShowAddModal(true);
             }}
           >
@@ -273,8 +309,16 @@ export default function CalendarScreen() {
               numberOfLines={3}
             />
 
-            <Pressable style={styles.addButton} onPress={handleAddEvent}>
-              <Text style={styles.addButtonText}>Add Event</Text>
+            <Pressable 
+              style={[styles.addButton, saving && styles.buttonDisabled]} 
+              onPress={handleAddEvent}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.addButtonText}>Add Event</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -286,6 +330,15 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
@@ -460,6 +513,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   addButtonText: {
     fontSize: 16,
