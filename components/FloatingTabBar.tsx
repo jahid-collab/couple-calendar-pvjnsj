@@ -59,6 +59,8 @@ export default function FloatingTabBar({
         stiffness: 150,
       });
     }
+    // activeIndex is a SharedValue from reanimated and doesn't need to be in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, tabs]);
 
   const animatedStyle = useAnimatedStyle(() => {
