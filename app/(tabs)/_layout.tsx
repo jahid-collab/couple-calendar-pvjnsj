@@ -26,6 +26,12 @@ export default function TabLayout() {
       icon: 'checklist',
       label: 'Reminders',
     },
+    {
+      name: 'profile',
+      route: '/(tabs)/profile',
+      icon: 'person.fill',
+      label: 'Profile',
+    },
   ];
 
   if (Platform.OS === 'ios') {
@@ -43,6 +49,10 @@ export default function TabLayout() {
           <Icon sf="checklist" drawable="ic_checklist" />
           <Label>Reminders</Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="profile">
+          <Icon sf="person.fill" drawable="ic_person" />
+          <Label>Profile</Label>
+        </NativeTabs.Trigger>
       </NativeTabs>
     );
   }
@@ -58,6 +68,7 @@ export default function TabLayout() {
         <Stack.Screen name="(home)" />
         <Stack.Screen name="goals" />
         <Stack.Screen name="reminders" />
+        <Stack.Screen name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>

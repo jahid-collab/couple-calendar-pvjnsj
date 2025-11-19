@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -9,7 +10,207 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      couple_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          full_name: string | null
+          bio: string | null
+          avatar_url: string | null
+          partner_email: string | null
+          couple_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          full_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          partner_email?: string | null
+          couple_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          full_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          partner_email?: string | null
+          couple_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      couples: {
+        Row: {
+          id: string
+          user1_id: string
+          user2_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user1_id: string
+          user2_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user1_id?: string
+          user2_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      events: {
+        Row: {
+          id: string
+          couple_id: string
+          title: string
+          description: string | null
+          start_date: string
+          end_date: string | null
+          location: string | null
+          event_type: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          title: string
+          description?: string | null
+          start_date: string
+          end_date?: string | null
+          location?: string | null
+          event_type?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          couple_id?: string
+          title?: string
+          description?: string | null
+          start_date?: string
+          end_date?: string | null
+          location?: string | null
+          event_type?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      goals: {
+        Row: {
+          id: string
+          couple_id: string
+          title: string
+          description: string | null
+          progress: number
+          target_date: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          title: string
+          description?: string | null
+          progress?: number
+          target_date?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          couple_id?: string
+          title?: string
+          description?: string | null
+          progress?: number
+          target_date?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      reminders: {
+        Row: {
+          id: string
+          couple_id: string
+          title: string
+          description: string | null
+          due_date: string
+          completed: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          title: string
+          description?: string | null
+          due_date: string
+          completed?: boolean
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          couple_id?: string
+          title?: string
+          description?: string | null
+          due_date?: string
+          completed?: boolean
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      partner_invitations: {
+        Row: {
+          id: string
+          inviter_id: string
+          invitee_email: string
+          status: 'pending' | 'accepted' | 'expired'
+          invitation_token: string
+          expires_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          inviter_id: string
+          invitee_email: string
+          status?: 'pending' | 'accepted' | 'expired'
+          invitation_token: string
+          expires_at: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          inviter_id?: string
+          invitee_email?: string
+          status?: 'pending' | 'accepted' | 'expired'
+          invitation_token?: string
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
