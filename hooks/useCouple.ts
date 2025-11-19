@@ -25,6 +25,8 @@ export function useCouple(userId: string | undefined) {
     if (!userId) return;
 
     try {
+      console.log('Fetching couple data for user:', userId);
+      
       // Fetch user's profile
       const { data: profileData, error: profileError } = await supabase
         .from('couple_profiles')
@@ -35,6 +37,7 @@ export function useCouple(userId: string | undefined) {
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
       } else {
+        console.log('Profile data:', profileData);
         setProfile(profileData);
       }
 
@@ -48,6 +51,7 @@ export function useCouple(userId: string | undefined) {
       if (coupleError && coupleError.code !== 'PGRST116') {
         console.error('Error fetching couple:', coupleError);
       } else if (coupleData) {
+        console.log('Couple data:', coupleData);
         setCouple(coupleData);
 
         // Fetch partner's profile
@@ -61,6 +65,7 @@ export function useCouple(userId: string | undefined) {
         if (partnerError && partnerError.code !== 'PGRST116') {
           console.error('Error fetching partner profile:', partnerError);
         } else {
+          console.log('Partner profile data:', partnerData);
           setPartnerProfile(partnerData);
         }
       }
@@ -113,10 +118,21 @@ export function useCouple(userId: string | undefined) {
   const updateProfile = async (updates: Partial<CoupleProfile>) => {
     if (!userId) throw new Error('User not authenticated');
 
+    console.log('Updating profile with:', updates);
+
+    // Use upsert to handle both insert and update cases
     const { data, error } = await supabase
       .from('couple_profiles')
-      .update(updates)
-      .eq('user_id', userId)
+      .upsert(
+        {
+          user_id: userId,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        }
+      )
       .select()
       .single();
 
@@ -125,6 +141,7 @@ export function useCouple(userId: string | undefined) {
       throw error;
     }
 
+    console.log('Profile updated successfully:', data);
     setProfile(data);
     return data;
   };
