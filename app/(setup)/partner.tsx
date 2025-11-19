@@ -9,17 +9,20 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/hooks/useAuth';
 import { useCouple } from '@/hooks/useCouple';
+import { useInvitations } from '@/hooks/useInvitations';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function PartnerSetupScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { profile, updateProfile, createCouple } = useCouple(user?.id);
+  const { sendInvitation, loading: invitationLoading } = useInvitations();
   const [partnerEmail, setPartnerEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -38,13 +41,20 @@ export default function PartnerSetupScreen() {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(partnerEmail)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Update profile with partner email
       await updateProfile({ partner_email: partnerEmail });
 
-      // Try to create couple if partner exists
+      // Try to create couple if partner already exists
       try {
         await createCouple(partnerEmail);
         Alert.alert(
@@ -52,19 +62,49 @@ export default function PartnerSetupScreen() {
           'You are now connected with your partner!',
           [{ text: 'OK', onPress: () => router.replace('/(tabs)/(home)') }]
         );
+        return;
       } catch (error: any) {
-        // Partner might not have signed up yet
+        console.log('Partner not found, sending invitation...');
+      }
+
+      // Partner doesn't exist yet, send invitation
+      const inviterName = profile?.full_name || user?.email || 'Someone';
+      const result = await sendInvitation(partnerEmail, inviterName);
+
+      if (result.success) {
+        // Show success message with option to share invitation link
         Alert.alert(
-          'Invitation Sent',
-          'Your partner hasn&apos;t signed up yet. Once they create an account with this email, you&apos;ll be automatically connected!',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)/(home)') }]
+          'Invitation Sent! 📧',
+          `We've sent an invitation to ${partnerEmail}. Once they sign up and accept, you'll be automatically connected!\n\nYou can also share the invitation link directly.`,
+          [
+            {
+              text: 'Share Link',
+              onPress: () => handleShareInvitation(result.invitationLink),
+            },
+            {
+              text: 'Done',
+              onPress: () => router.replace('/(tabs)/(home)'),
+              style: 'cancel',
+            },
+          ]
         );
       }
     } catch (error: any) {
       console.error('Connect error:', error);
-      Alert.alert('Error', error.message || 'Failed to connect with partner');
+      Alert.alert('Error', error.message || 'Failed to send invitation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShareInvitation = async (invitationLink: string) => {
+    try {
+      await Share.share({
+        message: `Join me on our Couple's Calendar app! 💕\n\nAccept my invitation here: ${invitationLink}`,
+        title: 'Join Our Couple\'s Calendar',
+      });
+    } catch (error) {
+      console.error('Error sharing invitation:', error);
     }
   };
 
@@ -75,7 +115,7 @@ export default function PartnerSetupScreen() {
     >
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <IconSymbol name="person.2.fill" size={64} color={colors.primary} />
+          <IconSymbol ios_icon_name="person.2.fill" android_material_icon_name="people" size={64} color={colors.primary} />
         </View>
         <Text style={styles.title}>Connect with Your Partner</Text>
         <Text style={styles.subtitle}>
@@ -85,7 +125,7 @@ export default function PartnerSetupScreen() {
 
       <View style={styles.form}>
         <View style={styles.inputContainer}>
-          <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+          <IconSymbol ios_icon_name="envelope.fill" android_material_icon_name="email" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.input}
             placeholder="Partner's Email"
@@ -94,36 +134,41 @@ export default function PartnerSetupScreen() {
             onChangeText={setPartnerEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            editable={!loading && !invitationLoading}
           />
         </View>
 
         <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, (loading || invitationLoading) && styles.buttonDisabled]}
           onPress={handleConnect}
-          disabled={loading}
+          disabled={loading || invitationLoading}
         >
-          {loading ? (
+          {(loading || invitationLoading) ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>Connect</Text>
+            <Text style={styles.buttonText}>Send Invitation</Text>
           )}
         </Pressable>
 
         <Pressable
           style={styles.skipButton}
           onPress={handleSkip}
-          disabled={loading}
+          disabled={loading || invitationLoading}
         >
           <Text style={styles.skipButtonText}>Skip for now</Text>
         </Pressable>
       </View>
 
       <View style={styles.infoBox}>
-        <IconSymbol name="info.circle.fill" size={24} color={colors.secondary} />
-        <Text style={styles.infoText}>
-          Your partner needs to sign up with the same email address you enter here.
-          Once they do, you&apos;ll be automatically connected!
-        </Text>
+        <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={24} color={colors.secondary} />
+        <View style={styles.infoTextContainer}>
+          <Text style={styles.infoText}>
+            Enter your partner&apos;s email address and we&apos;ll send them an invitation to join the app.
+          </Text>
+          <Text style={[styles.infoText, styles.infoTextSpacing]}>
+            Once they sign up and accept the invitation, you&apos;ll be automatically connected!
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -213,10 +258,15 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'flex-start',
   },
-  infoText: {
+  infoTextContainer: {
     flex: 1,
+  },
+  infoText: {
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  infoTextSpacing: {
+    marginTop: 8,
   },
 });

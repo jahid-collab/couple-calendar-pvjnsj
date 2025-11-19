@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,19 +12,44 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/hooks/useAuth';
+import { useInvitations } from '@/hooks/useInvitations';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { invitationToken } = useLocalSearchParams<{ invitationToken?: string }>();
   const { signIn, signUp } = useAuth();
+  const { acceptInvitation, getInvitationByToken } = useInvitations();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invitationEmail, setInvitationEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (invitationToken) {
+      loadInvitationEmail();
+    }
+  }, [invitationToken]);
+
+  const loadInvitationEmail = async () => {
+    if (!invitationToken) return;
+    
+    try {
+      const invitation = await getInvitationByToken(invitationToken);
+      if (invitation) {
+        setInvitationEmail(invitation.invitee_email);
+        setEmail(invitation.invitee_email);
+        setIsSignUp(true);
+      }
+    } catch (error) {
+      console.error('Error loading invitation:', error);
+    }
+  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -37,6 +62,15 @@ export default function LoginScreen() {
       return;
     }
 
+    // If there's an invitation, verify the email matches
+    if (invitationEmail && email !== invitationEmail) {
+      Alert.alert(
+        'Email Mismatch',
+        `This invitation was sent to ${invitationEmail}. Please use that email address to sign up.`
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -44,20 +78,57 @@ export default function LoginScreen() {
         const result = await signUp(email, password, fullName);
         console.log('Sign up result:', result);
         
-        Alert.alert(
-          'Check Your Email! 📧',
-          'We\'ve sent you a verification email. Please click the link in the email to verify your account before logging in.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setIsSignUp(false);
-                setPassword('');
-                setFullName('');
+        // If there's an invitation token, try to accept it after sign up
+        if (invitationToken && result.user) {
+          try {
+            await acceptInvitation(invitationToken);
+            Alert.alert(
+              'Success! 🎉',
+              'Your account has been created and you\'re now connected with your partner! Please check your email to verify your account.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setIsSignUp(false);
+                    setPassword('');
+                    setFullName('');
+                  },
+                },
+              ]
+            );
+          } catch (inviteError) {
+            console.error('Error accepting invitation:', inviteError);
+            Alert.alert(
+              'Account Created',
+              'Your account has been created! Please check your email to verify your account. You can accept the partner invitation after verification.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setIsSignUp(false);
+                    setPassword('');
+                    setFullName('');
+                  },
+                },
+              ]
+            );
+          }
+        } else {
+          Alert.alert(
+            'Check Your Email! 📧',
+            'We\'ve sent you a verification email. Please click the link in the email to verify your account before logging in.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setIsSignUp(false);
+                  setPassword('');
+                  setFullName('');
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        }
       } else {
         const result = await signIn(email, password);
         console.log('Sign in result:', result);
@@ -70,8 +141,13 @@ export default function LoginScreen() {
           return;
         }
 
-        // Navigation will be handled by _layout.tsx
-        console.log('Login successful, user:', result.user);
+        // If there's an invitation token, redirect to accept it
+        if (invitationToken) {
+          router.replace(`/accept-invitation?token=${invitationToken}`);
+        } else {
+          // Navigation will be handled by _layout.tsx
+          console.log('Login successful, user:', result.user);
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -112,9 +188,20 @@ export default function LoginScreen() {
           </View>
           <Text style={styles.title}>Couple&apos;s Calendar</Text>
           <Text style={styles.subtitle}>
-            Plan your journey together
+            {invitationEmail 
+              ? '💕 Join your partner on this journey'
+              : 'Plan your journey together'}
           </Text>
         </View>
+
+        {invitationEmail && (
+          <View style={styles.invitationBanner}>
+            <IconSymbol ios_icon_name="envelope.badge.fill" android_material_icon_name="mail" size={24} color={colors.primary} />
+            <Text style={styles.invitationText}>
+              You&apos;ve been invited! Sign up to connect with your partner.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.form}>
           {isSignUp && (
@@ -142,7 +229,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              editable={!loading}
+              editable={!loading && !invitationEmail}
             />
           </View>
 
@@ -174,21 +261,23 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          <Pressable
-            style={styles.switchButton}
-            onPress={() => {
-              setIsSignUp(!isSignUp);
-              setPassword('');
-              setFullName('');
-            }}
-            disabled={loading}
-          >
-            <Text style={styles.switchButtonText}>
-              {isSignUp
-                ? 'Already have an account? Sign In'
-                : 'Don&apos;t have an account? Sign Up'}
-            </Text>
-          </Pressable>
+          {!invitationEmail && (
+            <Pressable
+              style={styles.switchButton}
+              onPress={() => {
+                setIsSignUp(!isSignUp);
+                setPassword('');
+                setFullName('');
+              }}
+              disabled={loading}
+            >
+              <Text style={styles.switchButtonText}>
+                {isSignUp
+                  ? 'Already have an account? Sign In'
+                  : 'Don&apos;t have an account? Sign Up'}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -219,7 +308,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 24,
   },
   iconContainer: {
     marginBottom: 16,
@@ -235,6 +324,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  invitationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
+  },
+  invitationText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '600',
   },
   form: {
     width: '100%',
