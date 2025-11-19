@@ -14,12 +14,17 @@ import {
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { mockGoals } from '@/data/mockData';
 import { Goal } from '@/types/Event';
 import Svg, { Circle, G } from 'react-native-svg';
+import { useAuth } from '@/hooks/useAuth';
+import { useCouple } from '@/hooks/useCouple';
+import { useGoals } from '@/hooks/useGoals';
 
 export default function GoalsScreen() {
-  const [goals, setGoals] = useState<Goal[]>(mockGoals);
+  const { user } = useAuth();
+  const { couple } = useCouple(user?.id);
+  const { goals, loading, addGoal, updateGoalProgress } = useGoals(couple?.id);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -27,37 +32,56 @@ export default function GoalsScreen() {
     targetDate: '',
   });
 
-  const handleAddGoal = () => {
+  const handleAddGoal = async () => {
     if (!newGoal.title || !newGoal.description) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    const goalColors = ['#E91E63', '#9C27B0', '#F48FB1', '#FFD180'];
-    const goal: Goal = {
-      id: Date.now().toString(),
-      title: newGoal.title,
-      description: newGoal.description,
-      progress: 0,
-      targetDate: newGoal.targetDate,
-      color: goalColors[Math.floor(Math.random() * goalColors.length)],
-      emoji: '🎯',
-    };
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add goals');
+      return;
+    }
 
-    setGoals([...goals, goal]);
-    setShowAddModal(false);
-    setNewGoal({ title: '', description: '', targetDate: '' });
-    Alert.alert('Success', 'Goal added successfully!');
+    if (!couple?.id) {
+      Alert.alert('Error', 'You must be connected with a partner to add goals');
+      return;
+    }
+
+    try {
+      const goalColors = ['#E91E63', '#9C27B0', '#F48FB1', '#FFD180'];
+      const goal: Omit<Goal, 'id' | 'progress'> = {
+        title: newGoal.title,
+        description: newGoal.description,
+        targetDate: newGoal.targetDate || undefined,
+        color: goalColors[Math.floor(Math.random() * goalColors.length)],
+        emoji: '🎯',
+      };
+
+      console.log('Adding goal:', goal);
+      await addGoal(goal, user.id);
+      
+      setShowAddModal(false);
+      setNewGoal({ title: '', description: '', targetDate: '' });
+      Alert.alert('Success', 'Goal added successfully!');
+    } catch (error) {
+      console.error('Error adding goal:', error);
+      Alert.alert('Error', 'Failed to add goal. Please try again.');
+    }
   };
 
-  const updateProgress = (id: string, increment: number) => {
-    setGoals(goals.map(goal => {
-      if (goal.id === id) {
-        const newProgress = Math.max(0, Math.min(100, goal.progress + increment));
-        return { ...goal, progress: newProgress };
-      }
-      return goal;
-    }));
+  const updateProgress = async (id: string, increment: number) => {
+    const goal = goals.find(g => g.id === id);
+    if (!goal) return;
+
+    const newProgress = Math.max(0, Math.min(100, goal.progress + increment));
+    
+    try {
+      await updateGoalProgress(id, newProgress);
+    } catch (error) {
+      console.error('Error updating goal progress:', error);
+      Alert.alert('Error', 'Failed to update progress. Please try again.');
+    }
   };
 
   const renderHeaderRight = () => (
@@ -111,6 +135,34 @@ export default function GoalsScreen() {
     ? Math.round(goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length)
     : 0;
 
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.text }}>Loading goals...</Text>
+      </View>
+    );
+  }
+
+  if (!couple) {
+    return (
+      <>
+        {Platform.OS === 'ios' && (
+          <Stack.Screen
+            options={{
+              title: 'Shared Goals',
+            }}
+          />
+        )}
+        <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+          <Text style={[styles.headerTitle, { textAlign: 'center', marginBottom: 10 }]}>Connect with Your Partner</Text>
+          <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
+            You need to be connected with a partner to create shared goals. Go to the Profile tab to send or accept an invitation.
+          </Text>
+        </View>
+      </>
+    );
+  }
+
   return (
     <>
       {Platform.OS === 'ios' && (
@@ -144,53 +196,59 @@ export default function GoalsScreen() {
 
           <View style={styles.goalsSection}>
             <Text style={styles.sectionTitle}>Active Goals</Text>
-            {goals.map(goal => (
-              <View key={goal.id} style={[styles.goalCard, { borderLeftColor: goal.color }]}>
-                <View style={styles.goalHeader}>
-                  <Text style={styles.goalEmoji}>{goal.emoji || '🎯'}</Text>
-                  <View style={styles.goalInfo}>
-                    <Text style={styles.goalTitle}>{goal.title}</Text>
-                    <Text style={styles.goalDescription}>{goal.description}</Text>
-                    {goal.targetDate && (
-                      <Text style={styles.goalDate}>
-                        Target: {new Date(goal.targetDate).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric',
-                          year: 'numeric' 
-                        })}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.progressSection}>
-                  <View style={styles.progressBarContainer}>
-                    <View 
-                      style={[
-                        styles.progressBar, 
-                        { width: `${goal.progress}%`, backgroundColor: goal.color }
-                      ]} 
-                    />
-                  </View>
-                  <Text style={styles.progressLabel}>{goal.progress}%</Text>
-                </View>
-
-                <View style={styles.goalActions}>
-                  <Pressable 
-                    style={[styles.actionButton, { backgroundColor: colors.background }]}
-                    onPress={() => updateProgress(goal.id, -5)}
-                  >
-                    <IconSymbol name="minus" color={colors.text} size={16} />
-                  </Pressable>
-                  <Pressable 
-                    style={[styles.actionButton, { backgroundColor: goal.color }]}
-                    onPress={() => updateProgress(goal.id, 5)}
-                  >
-                    <IconSymbol name="plus" color="#FFFFFF" size={16} />
-                  </Pressable>
-                </View>
+            {goals.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No goals yet. Tap the + button to add your first goal!</Text>
               </View>
-            ))}
+            ) : (
+              goals.map(goal => (
+                <View key={goal.id} style={[styles.goalCard, { borderLeftColor: goal.color }]}>
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalEmoji}>{goal.emoji || '🎯'}</Text>
+                    <View style={styles.goalInfo}>
+                      <Text style={styles.goalTitle}>{goal.title}</Text>
+                      <Text style={styles.goalDescription}>{goal.description}</Text>
+                      {goal.targetDate && (
+                        <Text style={styles.goalDate}>
+                          Target: {new Date(goal.targetDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric' 
+                          })}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.progressSection}>
+                    <View style={styles.progressBarContainer}>
+                      <View 
+                        style={[
+                          styles.progressBar, 
+                          { width: `${goal.progress}%`, backgroundColor: goal.color }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressLabel}>{goal.progress}%</Text>
+                  </View>
+
+                  <View style={styles.goalActions}>
+                    <Pressable 
+                      style={[styles.actionButton, { backgroundColor: colors.background }]}
+                      onPress={() => updateProgress(goal.id, -5)}
+                    >
+                      <IconSymbol name="minus" color={colors.text} size={16} />
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.actionButton, { backgroundColor: goal.color }]}
+                      onPress={() => updateProgress(goal.id, 5)}
+                    >
+                      <IconSymbol name="plus" color="#FFFFFF" size={16} />
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         </ScrollView>
 
@@ -331,6 +389,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   goalCard: {
     backgroundColor: colors.card,

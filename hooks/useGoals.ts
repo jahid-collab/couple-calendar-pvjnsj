@@ -77,7 +77,21 @@ export function useGoals(coupleId: string | null | undefined) {
   };
 
   const addGoal = async (goal: Omit<Goal, 'id' | 'progress'>, userId: string) => {
-    if (!coupleId) throw new Error('No couple ID');
+    if (!coupleId) {
+      console.error('No couple ID available');
+      throw new Error('No couple ID');
+    }
+
+    console.log('Adding goal to database:', {
+      couple_id: coupleId,
+      created_by: userId,
+      title: goal.title,
+      description: goal.description,
+      progress: 0,
+      target_date: goal.targetDate || null,
+      color: goal.color,
+      emoji: goal.emoji || null,
+    });
 
     const goalInsert: GoalInsert = {
       couple_id: coupleId,
@@ -101,6 +115,7 @@ export function useGoals(coupleId: string | null | undefined) {
       throw error;
     }
 
+    console.log('Goal added successfully:', data);
     return data;
   };
 
