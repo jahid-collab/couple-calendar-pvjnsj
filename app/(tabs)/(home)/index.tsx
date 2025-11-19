@@ -22,14 +22,17 @@ import { useTheme } from '@react-navigation/native';
 import { useAuth } from '@/hooks/useAuth';
 import { useCouple } from '@/hooks/useCouple';
 import { useEvents } from '@/hooks/useEvents';
+import { useGoals } from '@/hooks/useGoals';
 
 export default function CalendarScreen() {
   const theme = useTheme();
   const { user } = useAuth();
   const { couple } = useCouple(user?.id);
-  const { events, loading, addEvent } = useEvents(couple?.id);
+  const { events, loading: eventsLoading, addEvent } = useEvents(couple?.id);
+  const { goals, loading: goalsLoading } = useGoals(couple?.id);
   const [selectedDate, setSelectedDate] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -37,24 +40,69 @@ export default function CalendarScreen() {
     description: '',
   });
 
-  const markedDates = events.reduce((acc, event) => {
-    acc[event.date] = {
-      marked: true,
-      dotColor: event.color,
-      selected: event.date === selectedDate,
-      selectedColor: colors.accent,
-    };
-    return acc;
-  }, {} as any);
+  const loading = eventsLoading || goalsLoading;
 
-  if (selectedDate && !markedDates[selectedDate]) {
-    markedDates[selectedDate] = {
-      selected: true,
-      selectedColor: colors.accent,
-    };
-  }
+  // Combine events and goals for calendar marking
+  const markedDates = React.useMemo(() => {
+    const dates: any = {};
+    
+    // Mark events
+    events.forEach(event => {
+      if (!dates[event.date]) {
+        dates[event.date] = { dots: [] };
+      }
+      dates[event.date].dots.push({
+        color: event.color,
+      });
+    });
+
+    // Mark goals with target dates
+    goals.forEach(goal => {
+      if (goal.targetDate) {
+        if (!dates[goal.targetDate]) {
+          dates[goal.targetDate] = { dots: [] };
+        }
+        dates[goal.targetDate].dots.push({
+          color: goal.color,
+        });
+      }
+    });
+
+    // Add selection styling
+    if (selectedDate) {
+      if (!dates[selectedDate]) {
+        dates[selectedDate] = {};
+      }
+      dates[selectedDate].selected = true;
+      dates[selectedDate].selectedColor = colors.accent;
+    }
+
+    // Convert dots array to marking format
+    Object.keys(dates).forEach(date => {
+      if (dates[date].dots && dates[date].dots.length > 0) {
+        dates[date].marked = true;
+        dates[date].dotColor = dates[date].dots[0].color;
+      }
+    });
+
+    return dates;
+  }, [events, goals, selectedDate]);
 
   const selectedEvents = events.filter(e => e.date === selectedDate);
+  const selectedGoals = goals.filter(g => g.targetDate === selectedDate);
+
+  const handleDayPress = (day: DateData) => {
+    console.log('Day pressed:', day.dateString);
+    setSelectedDate(day.dateString);
+    
+    // Check if there are events or goals on this date
+    const hasEvents = events.some(e => e.date === day.dateString);
+    const hasGoals = goals.some(g => g.targetDate === day.dateString);
+    
+    if (hasEvents || hasGoals) {
+      setShowDateDetailsModal(true);
+    }
+  };
 
   const handleAddEvent = async () => {
     console.log('=== handleAddEvent called ===');
@@ -145,7 +193,7 @@ export default function CalendarScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading events...</Text>
+        <Text style={styles.loadingText}>Loading calendar...</Text>
       </View>
     );
   }
@@ -171,10 +219,7 @@ export default function CalendarScreen() {
         >
           <View style={styles.calendarContainer}>
             <Calendar
-              onDayPress={(day: DateData) => {
-                console.log('Day pressed:', day.dateString);
-                setSelectedDate(day.dateString);
-              }}
+              onDayPress={handleDayPress}
               markedDates={markedDates}
               theme={{
                 backgroundColor: colors.card,
@@ -200,52 +245,22 @@ export default function CalendarScreen() {
             />
           </View>
 
-          {selectedDate && (
-            <View style={styles.eventsSection}>
-              <Text style={styles.sectionTitle}>
-                Events on {new Date(selectedDate).toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  day: 'numeric',
-                  year: 'numeric' 
-                })}
-              </Text>
-              
-              {selectedEvents.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <IconSymbol name="calendar.badge.plus" color={colors.textSecondary} size={48} />
-                  <Text style={styles.emptyText}>No events on this day</Text>
-                  <Text style={styles.emptySubtext}>Tap + to add an event</Text>
-                </View>
-              ) : (
-                selectedEvents.map(event => (
-                  <View key={event.id} style={[styles.eventCard, { borderLeftColor: event.color }]}>
-                    <View style={styles.eventHeader}>
-                      <Text style={styles.eventEmoji}>{event.emoji || '📅'}</Text>
-                      <View style={styles.eventInfo}>
-                        <Text style={styles.eventTitle}>{event.title}</Text>
-                        <Text style={styles.eventType}>{event.type.toUpperCase()}</Text>
-                      </View>
-                    </View>
-                    {event.description && (
-                      <Text style={styles.eventDescription}>{event.description}</Text>
-                    )}
-                  </View>
-                ))
-              )}
-            </View>
-          )}
-
           <View style={styles.upcomingSection}>
-            <Text style={styles.sectionTitle}>Upcoming Events</Text>
+            <Text style={styles.sectionTitle}>Upcoming Events & Goals</Text>
+            
+            {/* Upcoming Events */}
             {events
               .filter(e => new Date(e.date) >= new Date())
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-              .slice(0, 5)
+              .slice(0, 3)
               .map(event => (
                 <Pressable 
                   key={event.id} 
                   style={[styles.eventCard, { borderLeftColor: event.color }]}
-                  onPress={() => setSelectedDate(event.date)}
+                  onPress={() => {
+                    setSelectedDate(event.date);
+                    setShowDateDetailsModal(true);
+                  }}
                 >
                   <View style={styles.eventHeader}>
                     <Text style={styles.eventEmoji}>{event.emoji || '📅'}</Text>
@@ -262,6 +277,52 @@ export default function CalendarScreen() {
                   </View>
                 </Pressable>
               ))}
+
+            {/* Upcoming Goals with target dates */}
+            {goals
+              .filter(g => g.targetDate && new Date(g.targetDate) >= new Date())
+              .sort((a, b) => {
+                if (!a.targetDate || !b.targetDate) return 0;
+                return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+              })
+              .slice(0, 3)
+              .map(goal => (
+                <Pressable 
+                  key={goal.id} 
+                  style={[styles.goalCard, { borderLeftColor: goal.color }]}
+                  onPress={() => {
+                    if (goal.targetDate) {
+                      setSelectedDate(goal.targetDate);
+                      setShowDateDetailsModal(true);
+                    }
+                  }}
+                >
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventEmoji}>{goal.emoji || '🎯'}</Text>
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventTitle}>{goal.title}</Text>
+                      <Text style={styles.goalProgress}>{goal.progress}% complete</Text>
+                      {goal.targetDate && (
+                        <Text style={styles.eventDate}>
+                          Target: {new Date(goal.targetDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric' 
+                          })}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+
+            {events.length === 0 && goals.length === 0 && (
+              <View style={styles.emptyState}>
+                <IconSymbol name="calendar.badge.plus" color={colors.textSecondary} size={48} />
+                <Text style={styles.emptyText}>No upcoming events or goals</Text>
+                <Text style={styles.emptySubtext}>Tap + to add an event</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
 
@@ -276,6 +337,100 @@ export default function CalendarScreen() {
         )}
       </View>
 
+      {/* Date Details Modal */}
+      <Modal
+        visible={showDateDetailsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDateDetailsModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowDateDetailsModal(false)}
+        >
+          <Pressable 
+            style={styles.dateDetailsModal}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedDate && new Date(selectedDate).toLocaleDateString('en-US', { 
+                  month: 'long', 
+                  day: 'numeric',
+                  year: 'numeric' 
+                })}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDateDetailsModal(false)}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.dateDetailsContent} showsVerticalScrollIndicator={false}>
+              {/* Events Section */}
+              {selectedEvents.length > 0 && (
+                <View style={styles.detailsSection}>
+                  <Text style={styles.detailsSectionTitle}>Events</Text>
+                  {selectedEvents.map(event => (
+                    <View key={event.id} style={[styles.detailCard, { borderLeftColor: event.color }]}>
+                      <View style={styles.detailHeader}>
+                        <Text style={styles.detailEmoji}>{event.emoji || '📅'}</Text>
+                        <View style={styles.detailInfo}>
+                          <Text style={styles.detailTitle}>{event.title}</Text>
+                          <Text style={styles.detailType}>{event.type.toUpperCase()}</Text>
+                          {event.description && (
+                            <Text style={styles.detailDescription}>{event.description}</Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Goals Section */}
+              {selectedGoals.length > 0 && (
+                <View style={styles.detailsSection}>
+                  <Text style={styles.detailsSectionTitle}>Goals</Text>
+                  {selectedGoals.map(goal => (
+                    <View key={goal.id} style={[styles.detailCard, { borderLeftColor: goal.color }]}>
+                      <View style={styles.detailHeader}>
+                        <Text style={styles.detailEmoji}>{goal.emoji || '🎯'}</Text>
+                        <View style={styles.detailInfo}>
+                          <Text style={styles.detailTitle}>{goal.title}</Text>
+                          <View style={styles.progressContainer}>
+                            <View style={styles.progressBar}>
+                              <View 
+                                style={[
+                                  styles.progressFill, 
+                                  { width: `${goal.progress}%`, backgroundColor: goal.color }
+                                ]} 
+                              />
+                            </View>
+                            <Text style={styles.progressText}>{goal.progress}%</Text>
+                          </View>
+                          {goal.description && (
+                            <Text style={styles.detailDescription}>{goal.description}</Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {selectedEvents.length === 0 && selectedGoals.length === 0 && (
+                <View style={styles.emptyState}>
+                  <IconSymbol name="calendar" color={colors.textSecondary} size={48} />
+                  <Text style={styles.emptyText}>No events or goals on this day</Text>
+                  <Text style={styles.emptySubtext}>Tap + to add an event</Text>
+                </View>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Add Event Modal */}
       <Modal
         visible={showAddModal}
         animationType="slide"
@@ -402,10 +557,6 @@ const styles = StyleSheet.create({
   calendar: {
     borderRadius: 16,
   },
-  eventsSection: {
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
   upcomingSection: {
     paddingHorizontal: 16,
     marginTop: 24,
@@ -417,6 +568,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   eventCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  goalCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
@@ -451,6 +611,13 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 14,
     color: colors.textSecondary,
+    marginTop: 2,
+  },
+  goalProgress: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 2,
   },
   eventDescription: {
     fontSize: 14,
@@ -502,6 +669,16 @@ const styles = StyleSheet.create({
     padding: 24,
     minHeight: 400,
   },
+  dateDetailsModal: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  dateDetailsContent: {
+    maxHeight: 500,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -512,6 +689,77 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
+  },
+  detailsSection: {
+    marginBottom: 24,
+  },
+  detailsSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  detailCard: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  detailEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  detailInfo: {
+    flex: 1,
+  },
+  detailTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  detailType: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.primary,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  detailDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  progressBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: colors.textSecondary + '30',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginRight: 8,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    minWidth: 40,
+    textAlign: 'right',
   },
   input: {
     backgroundColor: colors.background,
