@@ -57,7 +57,12 @@ export default function CalendarScreen() {
   const selectedEvents = events.filter(e => e.date === selectedDate);
 
   const handleAddEvent = async () => {
-    console.log('handleAddEvent called');
+    console.log('=== handleAddEvent called ===');
+    console.log('newEvent:', newEvent);
+    console.log('selectedDate:', selectedDate);
+    console.log('user:', user);
+    console.log('couple:', couple);
+
     if (!newEvent.title || !selectedDate) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -86,22 +91,33 @@ export default function CalendarScreen() {
         color: eventColors[newEvent.type],
       };
 
-      await addEvent(event, user.id);
+      console.log('Attempting to add event:', event);
+      console.log('User ID:', user.id);
+
+      const result = await addEvent(event, user.id);
+      console.log('Event added successfully:', result);
+
       setShowAddModal(false);
       setNewEvent({ title: '', type: 'date', description: '' });
       Alert.alert('Success', 'Event added successfully!');
     } catch (error: any) {
-      console.error('Error adding event:', error);
-      Alert.alert('Error', error.message || 'Failed to add event');
+      console.error('=== Error adding event ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      console.error('Error code:', error.code);
+      Alert.alert('Error', error.message || 'Failed to add event. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleOpenModal = () => {
-    console.log('handleOpenModal called');
+    console.log('=== handleOpenModal called ===');
     console.log('selectedDate:', selectedDate);
     console.log('couple:', couple);
+    console.log('user:', user);
     
     if (!selectedDate) {
       Alert.alert('Select a Date', 'Please select a date first to add an event');
@@ -268,11 +284,17 @@ export default function CalendarScreen() {
       >
         <Pressable 
           style={styles.modalOverlay}
-          onPress={() => setShowAddModal(false)}
+          onPress={() => {
+            console.log('Modal overlay pressed, closing modal');
+            setShowAddModal(false);
+          }}
         >
           <Pressable 
             style={styles.modalContent}
-            onPress={(e) => e.stopPropagation()}
+            onPress={(e) => {
+              console.log('Modal content pressed, stopping propagation');
+              e.stopPropagation();
+            }}
           >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Event</Text>
@@ -286,7 +308,10 @@ export default function CalendarScreen() {
               placeholder="Event title"
               placeholderTextColor={colors.textSecondary}
               value={newEvent.title}
-              onChangeText={(text) => setNewEvent({ ...newEvent, title: text })}
+              onChangeText={(text) => {
+                console.log('Title changed:', text);
+                setNewEvent({ ...newEvent, title: text });
+              }}
             />
 
             <View style={styles.typeSelector}>
@@ -297,7 +322,10 @@ export default function CalendarScreen() {
                     styles.typeButton,
                     newEvent.type === type && styles.typeButtonActive
                   ]}
-                  onPress={() => setNewEvent({ ...newEvent, type })}
+                  onPress={() => {
+                    console.log('Type selected:', type);
+                    setNewEvent({ ...newEvent, type });
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text style={[
@@ -315,7 +343,10 @@ export default function CalendarScreen() {
               placeholder="Description (optional)"
               placeholderTextColor={colors.textSecondary}
               value={newEvent.description}
-              onChangeText={(text) => setNewEvent({ ...newEvent, description: text })}
+              onChangeText={(text) => {
+                console.log('Description changed:', text);
+                setNewEvent({ ...newEvent, description: text });
+              }}
               multiline
               numberOfLines={3}
             />

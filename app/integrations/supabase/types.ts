@@ -72,39 +72,39 @@ export type Database = {
         Row: {
           id: string
           couple_id: string
-          title: string
-          description: string | null
-          start_date: string
-          end_date: string | null
-          location: string | null
-          event_type: string | null
           created_by: string
+          title: string
+          date: string
+          type: string
+          description: string | null
+          color: string
+          emoji: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           couple_id: string
-          title: string
-          description?: string | null
-          start_date: string
-          end_date?: string | null
-          location?: string | null
-          event_type?: string | null
           created_by: string
+          title: string
+          date: string
+          type: string
+          description?: string | null
+          color: string
+          emoji?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           couple_id?: string
-          title?: string
-          description?: string | null
-          start_date?: string
-          end_date?: string | null
-          location?: string | null
-          event_type?: string | null
           created_by?: string
+          title?: string
+          date?: string
+          type?: string
+          description?: string | null
+          color?: string
+          emoji?: string | null
           created_at?: string
           updated_at?: string
         }
