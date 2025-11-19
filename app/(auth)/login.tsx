@@ -41,24 +41,28 @@ export default function LoginScreen() {
 
     try {
       if (isSignUp) {
-        await signUp(email, password, fullName);
+        const result = await signUp(email, password, fullName);
+        console.log('Sign up result:', result);
+        
         Alert.alert(
-          'Success!',
-          'Account created successfully! Please check your email to verify your account before logging in.',
+          'Check Your Email! 📧',
+          'We\'ve sent you a verification email. Please click the link in the email to verify your account before logging in.',
           [
             {
               text: 'OK',
               onPress: () => {
                 setIsSignUp(false);
                 setPassword('');
+                setFullName('');
               },
             },
           ]
         );
       } else {
-        const { session, user } = await signIn(email, password);
+        const result = await signIn(email, password);
+        console.log('Sign in result:', result);
         
-        if (!session) {
+        if (!result.session) {
           Alert.alert(
             'Email Not Verified',
             'Please verify your email address before logging in. Check your inbox for the verification link.'
@@ -66,12 +70,28 @@ export default function LoginScreen() {
           return;
         }
 
-        console.log('Login successful:', user);
-        router.replace('/(tabs)/(home)');
+        // Navigation will be handled by _layout.tsx
+        console.log('Login successful, user:', result.user);
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      Alert.alert('Error', error.message || 'Authentication failed');
+      
+      let errorMessage = 'Authentication failed';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Handle specific error cases
+      if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email address before logging in. Check your inbox for the verification link.';
+      } else if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -88,7 +108,7 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <IconSymbol name="heart.fill" size={64} color={colors.primary} />
+            <IconSymbol ios_icon_name="heart.fill" android_material_icon_name="favorite" size={64} color={colors.primary} />
           </View>
           <Text style={styles.title}>Couple&apos;s Calendar</Text>
           <Text style={styles.subtitle}>
@@ -99,7 +119,7 @@ export default function LoginScreen() {
         <View style={styles.form}>
           {isSignUp && (
             <View style={styles.inputContainer}>
-              <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
+              <IconSymbol ios_icon_name="person.fill" android_material_icon_name="person" size={20} color={colors.textSecondary} />
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
@@ -107,12 +127,13 @@ export default function LoginScreen() {
                 value={fullName}
                 onChangeText={setFullName}
                 autoCapitalize="words"
+                editable={!loading}
               />
             </View>
           )}
 
           <View style={styles.inputContainer}>
-            <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+            <IconSymbol ios_icon_name="envelope.fill" android_material_icon_name="email" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -121,11 +142,12 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              editable={!loading}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
+            <IconSymbol ios_icon_name="lock.fill" android_material_icon_name="lock" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.input}
               placeholder="Password"
@@ -134,6 +156,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
@@ -153,7 +176,11 @@ export default function LoginScreen() {
 
           <Pressable
             style={styles.switchButton}
-            onPress={() => setIsSignUp(!isSignUp)}
+            onPress={() => {
+              setIsSignUp(!isSignUp);
+              setPassword('');
+              setFullName('');
+            }}
             disabled={loading}
           >
             <Text style={styles.switchButtonText}>
