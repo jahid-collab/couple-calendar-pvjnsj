@@ -1,3 +1,4 @@
+
 // This file is a fallback for using MaterialIcons on Android and web.
 
 import React from "react";
@@ -132,6 +133,7 @@ const MAPPING = {
   "clock.fill": "access-time",
   "clock": "access-time",
   "calendar": "event",
+  "calendar.badge.plus": "event-available",
   "timer": "timer",
 
   // User & Profile

@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -56,6 +57,7 @@ export default function CalendarScreen() {
   const selectedEvents = events.filter(e => e.date === selectedDate);
 
   const handleAddEvent = async () => {
+    console.log('handleAddEvent called');
     if (!newEvent.title || !selectedDate) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -96,23 +98,31 @@ export default function CalendarScreen() {
     }
   };
 
+  const handleOpenModal = () => {
+    console.log('handleOpenModal called');
+    console.log('selectedDate:', selectedDate);
+    console.log('couple:', couple);
+    
+    if (!selectedDate) {
+      Alert.alert('Select a Date', 'Please select a date first to add an event');
+      return;
+    }
+    if (!couple) {
+      Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
+      return;
+    }
+    console.log('Opening modal...');
+    setShowAddModal(true);
+  };
+
   const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => {
-        if (!selectedDate) {
-          Alert.alert('Select a Date', 'Please select a date first to add an event');
-          return;
-        }
-        if (!couple) {
-          Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
-          return;
-        }
-        setShowAddModal(true);
-      }}
+    <TouchableOpacity
+      onPress={handleOpenModal}
       style={styles.headerButton}
+      activeOpacity={0.7}
     >
       <IconSymbol name="plus" color={colors.primary} size={24} />
-    </Pressable>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -145,7 +155,10 @@ export default function CalendarScreen() {
         >
           <View style={styles.calendarContainer}>
             <Calendar
-              onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
+              onDayPress={(day: DateData) => {
+                console.log('Day pressed:', day.dateString);
+                setSelectedDate(day.dateString);
+              }}
               markedDates={markedDates}
               theme={{
                 backgroundColor: colors.card,
@@ -237,22 +250,13 @@ export default function CalendarScreen() {
         </ScrollView>
 
         {Platform.OS !== 'ios' && (
-          <Pressable
+          <TouchableOpacity
             style={styles.floatingButton}
-            onPress={() => {
-              if (!selectedDate) {
-                Alert.alert('Select a Date', 'Please select a date first to add an event');
-                return;
-              }
-              if (!couple) {
-                Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
-                return;
-              }
-              setShowAddModal(true);
-            }}
+            onPress={handleOpenModal}
+            activeOpacity={0.8}
           >
             <IconSymbol name="plus" color="#FFFFFF" size={28} />
-          </Pressable>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -262,13 +266,19 @@ export default function CalendarScreen() {
         transparent={true}
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowAddModal(false)}
+        >
+          <Pressable 
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Event</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <IconSymbol name="xmark" color={colors.text} size={24} />
-              </Pressable>
+              </TouchableOpacity>
             </View>
 
             <TextInput
@@ -281,13 +291,14 @@ export default function CalendarScreen() {
 
             <View style={styles.typeSelector}>
               {(['date', 'vacation', 'trip', 'event'] as const).map(type => (
-                <Pressable
+                <TouchableOpacity
                   key={type}
                   style={[
                     styles.typeButton,
                     newEvent.type === type && styles.typeButtonActive
                   ]}
                   onPress={() => setNewEvent({ ...newEvent, type })}
+                  activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.typeButtonText,
@@ -295,7 +306,7 @@ export default function CalendarScreen() {
                   ]}>
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </Text>
-                </Pressable>
+                </TouchableOpacity>
               ))}
             </View>
 
@@ -309,19 +320,20 @@ export default function CalendarScreen() {
               numberOfLines={3}
             />
 
-            <Pressable 
+            <TouchableOpacity 
               style={[styles.addButton, saving && styles.buttonDisabled]} 
               onPress={handleAddEvent}
               disabled={saving}
+              activeOpacity={0.8}
             >
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.addButtonText}>Add Event</Text>
               )}
-            </Pressable>
-          </View>
-        </View>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -432,6 +444,7 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    marginRight: 8,
   },
   floatingButton: {
     position: 'absolute',
