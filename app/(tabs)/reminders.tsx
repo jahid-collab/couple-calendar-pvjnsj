@@ -10,50 +10,81 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { mockReminders } from '@/data/mockData';
-import { Reminder } from '@/types/Event';
+import { useAuth } from '@/hooks/useAuth';
+import { useCouple } from '@/hooks/useCouple';
+import { useReminders } from '@/hooks/useReminders';
 
 export default function RemindersScreen() {
-  const [reminders, setReminders] = useState<Reminder[]>(mockReminders);
+  const { user } = useAuth();
+  const { couple } = useCouple(user?.id);
+  const { reminders, loading, addReminder, toggleReminder, deleteReminder: deleteReminderFromDb } = useReminders(couple?.id);
+  
   const [showAddModal, setShowAddModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newReminder, setNewReminder] = useState({
     title: '',
     dueDate: '',
   });
 
-  const handleAddReminder = () => {
+  const handleAddReminder = async () => {
+    console.log('=== handleAddReminder called ===');
+    console.log('newReminder:', newReminder);
+    console.log('user:', user);
+    console.log('couple:', couple);
+
     if (!newReminder.title) {
       Alert.alert('Error', 'Please enter a reminder title');
       return;
     }
 
-    const reminder: Reminder = {
-      id: Date.now().toString(),
-      title: newReminder.title,
-      completed: false,
-      dueDate: newReminder.dueDate,
-      shared: true,
-    };
+    if (!user || !couple) {
+      Alert.alert('Error', 'You must be connected with a partner to add reminders');
+      return;
+    }
 
-    setReminders([...reminders, reminder]);
-    setShowAddModal(false);
-    setNewReminder({ title: '', dueDate: '' });
-    Alert.alert('Success', 'Reminder added successfully!');
+    setSaving(true);
+
+    try {
+      console.log('Attempting to add reminder...');
+      await addReminder(
+        {
+          title: newReminder.title,
+          dueDate: newReminder.dueDate || undefined,
+          shared: true,
+        },
+        user.id
+      );
+
+      console.log('Reminder added successfully');
+      setShowAddModal(false);
+      setNewReminder({ title: '', dueDate: '' });
+      Alert.alert('Success', 'Reminder added successfully!');
+    } catch (error: any) {
+      console.error('=== Error adding reminder ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      Alert.alert('Error', error.message || 'Failed to add reminder. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleReminder = (id: string) => {
-    setReminders(reminders.map(reminder => 
-      reminder.id === id 
-        ? { ...reminder, completed: !reminder.completed }
-        : reminder
-    ));
+  const handleToggleReminder = async (id: string, completed: boolean) => {
+    try {
+      await toggleReminder(id, !completed);
+    } catch (error: any) {
+      console.error('Error toggling reminder:', error);
+      Alert.alert('Error', 'Failed to update reminder');
+    }
   };
 
-  const deleteReminder = (id: string) => {
+  const handleDeleteReminder = (id: string) => {
     Alert.alert(
       'Delete Reminder',
       'Are you sure you want to delete this reminder?',
@@ -62,23 +93,53 @@ export default function RemindersScreen() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => setReminders(reminders.filter(r => r.id !== id))
+          onPress: async () => {
+            try {
+              await deleteReminderFromDb(id);
+            } catch (error: any) {
+              console.error('Error deleting reminder:', error);
+              Alert.alert('Error', 'Failed to delete reminder');
+            }
+          }
         },
       ]
     );
   };
 
+  const handleOpenModal = () => {
+    console.log('=== handleOpenModal called ===');
+    console.log('couple:', couple);
+    console.log('user:', user);
+    
+    if (!couple) {
+      Alert.alert('Connect with Partner', 'Please connect with your partner first to add reminders');
+      return;
+    }
+    console.log('Opening modal...');
+    setShowAddModal(true);
+  };
+
   const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => setShowAddModal(true)}
+    <TouchableOpacity
+      onPress={handleOpenModal}
       style={styles.headerButton}
+      activeOpacity={0.7}
     >
       <IconSymbol name="plus" color={colors.primary} size={24} />
-    </Pressable>
+    </TouchableOpacity>
   );
 
   const activeReminders = reminders.filter(r => !r.completed);
   const completedReminders = reminders.filter(r => r.completed);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading reminders...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -123,7 +184,7 @@ export default function RemindersScreen() {
                 <View key={reminder.id} style={styles.reminderCard}>
                   <Pressable 
                     style={styles.checkboxContainer}
-                    onPress={() => toggleReminder(reminder.id)}
+                    onPress={() => handleToggleReminder(reminder.id, reminder.completed)}
                   >
                     <View style={[
                       styles.checkbox,
@@ -164,7 +225,7 @@ export default function RemindersScreen() {
 
                   <Pressable 
                     style={styles.deleteButton}
-                    onPress={() => deleteReminder(reminder.id)}
+                    onPress={() => handleDeleteReminder(reminder.id)}
                   >
                     <IconSymbol name="trash" color={colors.textSecondary} size={20} />
                   </Pressable>
@@ -180,7 +241,7 @@ export default function RemindersScreen() {
                 <View key={reminder.id} style={styles.reminderCard}>
                   <Pressable 
                     style={styles.checkboxContainer}
-                    onPress={() => toggleReminder(reminder.id)}
+                    onPress={() => handleToggleReminder(reminder.id, reminder.completed)}
                   >
                     <View style={[
                       styles.checkbox,
@@ -215,7 +276,7 @@ export default function RemindersScreen() {
 
                   <Pressable 
                     style={styles.deleteButton}
-                    onPress={() => deleteReminder(reminder.id)}
+                    onPress={() => handleDeleteReminder(reminder.id)}
                   >
                     <IconSymbol name="trash" color={colors.textSecondary} size={20} />
                   </Pressable>
@@ -234,12 +295,13 @@ export default function RemindersScreen() {
         </ScrollView>
 
         {Platform.OS !== 'ios' && (
-          <Pressable
+          <TouchableOpacity
             style={styles.floatingButton}
-            onPress={() => setShowAddModal(true)}
+            onPress={handleOpenModal}
+            activeOpacity={0.8}
           >
             <IconSymbol name="plus" color="#FFFFFF" size={28} />
-          </Pressable>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -249,13 +311,25 @@ export default function RemindersScreen() {
         transparent={true}
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => {
+            console.log('Modal overlay pressed, closing modal');
+            setShowAddModal(false);
+          }}
+        >
+          <Pressable 
+            style={styles.modalContent}
+            onPress={(e) => {
+              console.log('Modal content pressed, stopping propagation');
+              e.stopPropagation();
+            }}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Reminder</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <IconSymbol name="xmark" color={colors.text} size={24} />
-              </Pressable>
+              </TouchableOpacity>
             </View>
 
             <TextInput
@@ -263,7 +337,10 @@ export default function RemindersScreen() {
               placeholder="What do you need to remember?"
               placeholderTextColor={colors.textSecondary}
               value={newReminder.title}
-              onChangeText={(text) => setNewReminder({ ...newReminder, title: text })}
+              onChangeText={(text) => {
+                console.log('Title changed:', text);
+                setNewReminder({ ...newReminder, title: text });
+              }}
             />
 
             <TextInput
@@ -271,14 +348,26 @@ export default function RemindersScreen() {
               placeholder="Due date (optional, YYYY-MM-DD)"
               placeholderTextColor={colors.textSecondary}
               value={newReminder.dueDate}
-              onChangeText={(text) => setNewReminder({ ...newReminder, dueDate: text })}
+              onChangeText={(text) => {
+                console.log('Due date changed:', text);
+                setNewReminder({ ...newReminder, dueDate: text });
+              }}
             />
 
-            <Pressable style={styles.addButton} onPress={handleAddReminder}>
-              <Text style={styles.addButtonText}>Add Reminder</Text>
-            </Pressable>
-          </View>
-        </View>
+            <TouchableOpacity 
+              style={[styles.addButton, saving && styles.buttonDisabled]} 
+              onPress={handleAddReminder}
+              disabled={saving}
+              activeOpacity={0.8}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.addButtonText}>Add Reminder</Text>
+              )}
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -287,6 +376,15 @@ export default function RemindersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
@@ -415,6 +513,7 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    marginRight: 8,
   },
   floatingButton: {
     position: 'absolute',
@@ -466,6 +565,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   addButtonText: {
     fontSize: 16,

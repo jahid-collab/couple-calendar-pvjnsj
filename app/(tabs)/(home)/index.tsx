@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCouple } from '@/hooks/useCouple';
 import { useEvents } from '@/hooks/useEvents';
 import { useGoals } from '@/hooks/useGoals';
+import { useReminders } from '@/hooks/useReminders';
 
 export default function CalendarScreen() {
   const theme = useTheme();
@@ -30,6 +31,7 @@ export default function CalendarScreen() {
   const { couple } = useCouple(user?.id);
   const { events, loading: eventsLoading, addEvent } = useEvents(couple?.id);
   const { goals, loading: goalsLoading } = useGoals(couple?.id);
+  const { reminders, loading: remindersLoading } = useReminders(couple?.id);
   const [selectedDate, setSelectedDate] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -40,9 +42,9 @@ export default function CalendarScreen() {
     description: '',
   });
 
-  const loading = eventsLoading || goalsLoading;
+  const loading = eventsLoading || goalsLoading || remindersLoading;
 
-  // Combine events and goals for calendar marking
+  // Combine events, goals, and reminders for calendar marking
   const markedDates = React.useMemo(() => {
     const dates: any = {};
     
@@ -68,6 +70,18 @@ export default function CalendarScreen() {
       }
     });
 
+    // Mark reminders with due dates
+    reminders.forEach(reminder => {
+      if (reminder.dueDate) {
+        if (!dates[reminder.dueDate]) {
+          dates[reminder.dueDate] = { dots: [] };
+        }
+        dates[reminder.dueDate].dots.push({
+          color: colors.accent,
+        });
+      }
+    });
+
     // Add selection styling
     if (selectedDate) {
       if (!dates[selectedDate]) {
@@ -86,20 +100,22 @@ export default function CalendarScreen() {
     });
 
     return dates;
-  }, [events, goals, selectedDate]);
+  }, [events, goals, reminders, selectedDate]);
 
   const selectedEvents = events.filter(e => e.date === selectedDate);
   const selectedGoals = goals.filter(g => g.targetDate === selectedDate);
+  const selectedReminders = reminders.filter(r => r.dueDate === selectedDate);
 
   const handleDayPress = (day: DateData) => {
     console.log('Day pressed:', day.dateString);
     setSelectedDate(day.dateString);
     
-    // Check if there are events or goals on this date
+    // Check if there are events, goals, or reminders on this date
     const hasEvents = events.some(e => e.date === day.dateString);
     const hasGoals = goals.some(g => g.targetDate === day.dateString);
+    const hasReminders = reminders.some(r => r.dueDate === day.dateString);
     
-    if (hasEvents || hasGoals) {
+    if (hasEvents || hasGoals || hasReminders) {
       setShowDateDetailsModal(true);
     }
   };
@@ -246,7 +262,7 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.upcomingSection}>
-            <Text style={styles.sectionTitle}>Upcoming Events & Goals</Text>
+            <Text style={styles.sectionTitle}>Upcoming Events, Goals & Reminders</Text>
             
             {/* Upcoming Events */}
             {events
@@ -316,10 +332,47 @@ export default function CalendarScreen() {
                 </Pressable>
               ))}
 
-            {events.length === 0 && goals.length === 0 && (
+            {/* Upcoming Reminders with due dates */}
+            {reminders
+              .filter(r => r.dueDate && new Date(r.dueDate) >= new Date() && !r.completed)
+              .sort((a, b) => {
+                if (!a.dueDate || !b.dueDate) return 0;
+                return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+              })
+              .slice(0, 3)
+              .map(reminder => (
+                <Pressable 
+                  key={reminder.id} 
+                  style={[styles.reminderCard, { borderLeftColor: colors.accent }]}
+                  onPress={() => {
+                    if (reminder.dueDate) {
+                      setSelectedDate(reminder.dueDate);
+                      setShowDateDetailsModal(true);
+                    }
+                  }}
+                >
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventEmoji}>⏰</Text>
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventTitle}>{reminder.title}</Text>
+                      {reminder.dueDate && (
+                        <Text style={styles.eventDate}>
+                          Due: {new Date(reminder.dueDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric' 
+                          })}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+
+            {events.length === 0 && goals.length === 0 && reminders.length === 0 && (
               <View style={styles.emptyState}>
                 <IconSymbol name="calendar.badge.plus" color={colors.textSecondary} size={48} />
-                <Text style={styles.emptyText}>No upcoming events or goals</Text>
+                <Text style={styles.emptyText}>No upcoming events, goals, or reminders</Text>
                 <Text style={styles.emptySubtext}>Tap + to add an event</Text>
               </View>
             )}
@@ -418,10 +471,30 @@ export default function CalendarScreen() {
                 </View>
               )}
 
-              {selectedEvents.length === 0 && selectedGoals.length === 0 && (
+              {/* Reminders Section */}
+              {selectedReminders.length > 0 && (
+                <View style={styles.detailsSection}>
+                  <Text style={styles.detailsSectionTitle}>Reminders</Text>
+                  {selectedReminders.map(reminder => (
+                    <View key={reminder.id} style={[styles.detailCard, { borderLeftColor: colors.accent }]}>
+                      <View style={styles.detailHeader}>
+                        <Text style={styles.detailEmoji}>⏰</Text>
+                        <View style={styles.detailInfo}>
+                          <Text style={styles.detailTitle}>{reminder.title}</Text>
+                          {reminder.completed && (
+                            <Text style={styles.completedBadge}>✓ Completed</Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {selectedEvents.length === 0 && selectedGoals.length === 0 && selectedReminders.length === 0 && (
                 <View style={styles.emptyState}>
                   <IconSymbol name="calendar" color={colors.textSecondary} size={48} />
-                  <Text style={styles.emptyText}>No events or goals on this day</Text>
+                  <Text style={styles.emptyText}>No events, goals, or reminders on this day</Text>
                   <Text style={styles.emptySubtext}>Tap + to add an event</Text>
                 </View>
               )}
@@ -585,6 +658,15 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
+  reminderCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
   eventHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -735,6 +817,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     lineHeight: 20,
+  },
+  completedBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: 4,
   },
   progressContainer: {
     flexDirection: 'row',

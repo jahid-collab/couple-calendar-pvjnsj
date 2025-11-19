@@ -150,8 +150,9 @@ export type Database = {
           couple_id: string
           title: string
           description: string | null
-          due_date: string
+          due_date: string | null
           completed: boolean
+          shared: boolean
           created_by: string
           created_at: string
           updated_at: string
@@ -161,8 +162,9 @@ export type Database = {
           couple_id: string
           title: string
           description?: string | null
-          due_date: string
+          due_date?: string | null
           completed?: boolean
+          shared?: boolean
           created_by: string
           created_at?: string
           updated_at?: string
@@ -172,8 +174,9 @@ export type Database = {
           couple_id?: string
           title?: string
           description?: string | null
-          due_date?: string
+          due_date?: string | null
           completed?: boolean
+          shared?: boolean
           created_by?: string
           created_at?: string
           updated_at?: string
