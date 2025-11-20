@@ -1,15 +1,36 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
+// Pastel color palette inspired by the design
 export const colors = {
-  background: '#FAF9F6',
-  text: '#2C2C2E',
-  textSecondary: '#7A7A7D',
-  primary: '#E91E63',
-  secondary: '#9C27B0',
-  accent: '#F48FB1',
+  // Backgrounds
+  background: '#FFF9F5',
   card: '#FFFFFF',
-  highlight: '#FFD180',
+  
+  // Text colors
+  text: '#1A1A1A',
+  textSecondary: '#8E8E93',
+  
+  // Pastel accent colors
+  peach: '#FF9B7D',
+  lightPeach: '#FFE5DC',
+  lavender: '#B8A4FF',
+  lightLavender: '#E8E0FF',
+  yellow: '#FFD88A',
+  lightYellow: '#FFF4DC',
+  pink: '#FFB4C8',
+  lightPink: '#FFE5ED',
+  mint: '#A8E6CF',
+  lightMint: '#E0F7ED',
+  
+  // Primary colors
+  primary: '#FF9B7D',
+  secondary: '#B8A4FF',
+  accent: '#FFD88A',
+  
+  // UI elements
+  border: '#F0F0F0',
+  shadow: 'rgba(0, 0, 0, 0.08)',
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -45,15 +66,16 @@ export const commonStyles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
     color: colors.text,
-    marginBottom: 10
+    marginBottom: 10,
+    letterSpacing: -0.5,
   },
   text: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '400',
     color: colors.text,
     marginBottom: 8,
     lineHeight: 24,
@@ -71,11 +93,11 @@ export const commonStyles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    boxShadow: `0px 4px 16px ${colors.shadow}`,
     elevation: 2,
   },
   icon: {

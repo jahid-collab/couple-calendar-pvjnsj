@@ -88,7 +88,7 @@ export default function CalendarScreen() {
         dates[selectedDate] = {};
       }
       dates[selectedDate].selected = true;
-      dates[selectedDate].selectedColor = colors.accent;
+      dates[selectedDate].selectedColor = colors.primary;
     }
 
     // Convert dots array to marking format
@@ -141,10 +141,10 @@ export default function CalendarScreen() {
 
     try {
       const eventColors = {
-        vacation: '#FFD180',
-        date: '#E91E63',
-        trip: '#9C27B0',
-        event: '#F48FB1',
+        vacation: colors.lavender,
+        date: colors.peach,
+        trip: colors.yellow,
+        event: colors.pink,
       };
 
       const event: Omit<Event, 'id'> = {
@@ -201,9 +201,39 @@ export default function CalendarScreen() {
       style={styles.headerButton}
       activeOpacity={0.7}
     >
-      <IconSymbol name="plus" color={colors.primary} size={24} />
+      <IconSymbol name="plus" color={colors.text} size={24} />
     </TouchableOpacity>
   );
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'vacation': return '🏖️';
+      case 'date': return '💕';
+      case 'trip': return '✈️';
+      case 'event': return '🎉';
+      default: return '📅';
+    }
+  };
+
+  const getEventBackgroundColor = (type: string) => {
+    switch (type) {
+      case 'vacation': return colors.lightLavender;
+      case 'date': return colors.lightPeach;
+      case 'trip': return colors.lightYellow;
+      case 'event': return colors.lightPink;
+      default: return colors.lightPeach;
+    }
+  };
+
+  const getEventIconColor = (type: string) => {
+    switch (type) {
+      case 'vacation': return colors.lavender;
+      case 'date': return colors.peach;
+      case 'trip': return colors.yellow;
+      case 'event': return colors.pink;
+      default: return colors.peach;
+    }
+  };
 
   if (loading) {
     return (
@@ -219,8 +249,9 @@ export default function CalendarScreen() {
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
-            title: 'Joint Calendar',
+            title: 'November',
             headerRight: renderHeaderRight,
+            headerLargeTitle: false,
           }}
         />
       )}
@@ -233,61 +264,103 @@ export default function CalendarScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header with Month and Icons */}
+          {Platform.OS !== 'ios' && (
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.closeButton}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+              <Text style={styles.monthTitle}>November</Text>
+              <View style={styles.headerIcons}>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <IconSymbol name="calendar" color={colors.text} size={22} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <IconSymbol name="bell" color={colors.text} size={22} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Title */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.pageTitle}>Schedule in your</Text>
+            <Text style={styles.pageTitle}>calendar 📬</Text>
+          </View>
+
+          {/* Calendar Week View */}
           <View style={styles.calendarContainer}>
             <Calendar
               onDayPress={handleDayPress}
               markedDates={markedDates}
               theme={{
-                backgroundColor: colors.card,
-                calendarBackground: colors.card,
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
                 textSectionTitleColor: colors.textSecondary,
                 selectedDayBackgroundColor: colors.primary,
                 selectedDayTextColor: '#FFFFFF',
                 todayTextColor: colors.primary,
                 dayTextColor: colors.text,
-                textDisabledColor: colors.textSecondary,
+                textDisabledColor: colors.textSecondary + '60',
                 dotColor: colors.primary,
                 selectedDotColor: '#FFFFFF',
-                arrowColor: colors.primary,
+                arrowColor: colors.text,
                 monthTextColor: colors.text,
                 textDayFontWeight: '500',
-                textMonthFontWeight: 'bold',
-                textDayHeaderFontWeight: '600',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '500',
                 textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 14,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 13,
               }}
               style={styles.calendar}
+              hideExtraDays={true}
             />
           </View>
 
-          <View style={styles.upcomingSection}>
-            <Text style={styles.sectionTitle}>Upcoming Events, Goals & Reminders</Text>
-            
+          {/* Events List */}
+          <View style={styles.eventsSection}>
             {/* Upcoming Events */}
             {events
               .filter(e => new Date(e.date) >= new Date())
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-              .slice(0, 3)
-              .map(event => (
+              .slice(0, 5)
+              .map((event, index) => (
                 <Pressable 
                   key={event.id} 
-                  style={[styles.eventCard, { borderLeftColor: event.color }]}
+                  style={[
+                    styles.eventCard,
+                    { backgroundColor: getEventBackgroundColor(event.type) }
+                  ]}
                   onPress={() => {
                     setSelectedDate(event.date);
                     setShowDateDetailsModal(true);
                   }}
                 >
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventEmoji}>{event.emoji || '📅'}</Text>
-                    <View style={styles.eventInfo}>
+                  <View style={styles.eventTime}>
+                    <Text style={styles.eventTimeText}>
+                      {new Date(event.date).toLocaleTimeString('en-US', { 
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true 
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.eventContent}>
+                    <View style={[
+                      styles.eventIconCircle,
+                      { backgroundColor: getEventIconColor(event.type) }
+                    ]}>
+                      <Text style={styles.eventIconText}>{getEventIcon(event.type)}</Text>
+                    </View>
+                    <View style={styles.eventDetails}>
                       <Text style={styles.eventTitle}>{event.title}</Text>
-                      <Text style={styles.eventDate}>
-                        {new Date(event.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric',
-                          year: 'numeric' 
-                        })}
+                      <Text style={styles.eventSubtitle}>
+                        {event.description || `Today ${new Date(event.date).toLocaleTimeString('en-US', { 
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true 
+                        })}`}
                       </Text>
                     </View>
                   </View>
@@ -302,10 +375,13 @@ export default function CalendarScreen() {
                 return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
               })
               .slice(0, 3)
-              .map(goal => (
+              .map((goal, index) => (
                 <Pressable 
                   key={goal.id} 
-                  style={[styles.goalCard, { borderLeftColor: goal.color }]}
+                  style={[
+                    styles.eventCard,
+                    { backgroundColor: colors.lightMint }
+                  ]}
                   onPress={() => {
                     if (goal.targetDate) {
                       setSelectedDate(goal.targetDate);
@@ -313,20 +389,27 @@ export default function CalendarScreen() {
                     }
                   }}
                 >
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventEmoji}>{goal.emoji || '🎯'}</Text>
-                    <View style={styles.eventInfo}>
+                  <View style={styles.eventTime}>
+                    <Text style={styles.eventTimeText}>
+                      {goal.targetDate && new Date(goal.targetDate).toLocaleTimeString('en-US', { 
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true 
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.eventContent}>
+                    <View style={[
+                      styles.eventIconCircle,
+                      { backgroundColor: colors.mint }
+                    ]}>
+                      <Text style={styles.eventIconText}>{goal.emoji || '🎯'}</Text>
+                    </View>
+                    <View style={styles.eventDetails}>
                       <Text style={styles.eventTitle}>{goal.title}</Text>
-                      <Text style={styles.goalProgress}>{goal.progress}% complete</Text>
-                      {goal.targetDate && (
-                        <Text style={styles.eventDate}>
-                          Target: {new Date(goal.targetDate).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric' 
-                          })}
-                        </Text>
-                      )}
+                      <Text style={styles.eventSubtitle}>
+                        {goal.progress}% complete
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -340,10 +423,13 @@ export default function CalendarScreen() {
                 return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
               })
               .slice(0, 3)
-              .map(reminder => (
+              .map((reminder, index) => (
                 <Pressable 
                   key={reminder.id} 
-                  style={[styles.reminderCard, { borderLeftColor: colors.accent }]}
+                  style={[
+                    styles.eventCard,
+                    { backgroundColor: colors.lightYellow }
+                  ]}
                   onPress={() => {
                     if (reminder.dueDate) {
                       setSelectedDate(reminder.dueDate);
@@ -351,19 +437,31 @@ export default function CalendarScreen() {
                     }
                   }}
                 >
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventEmoji}>⏰</Text>
-                    <View style={styles.eventInfo}>
+                  <View style={styles.eventTime}>
+                    <Text style={styles.eventTimeText}>
+                      {reminder.dueDate && new Date(reminder.dueDate).toLocaleTimeString('en-US', { 
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true 
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.eventContent}>
+                    <View style={[
+                      styles.eventIconCircle,
+                      { backgroundColor: colors.yellow }
+                    ]}>
+                      <Text style={styles.eventIconText}>⏰</Text>
+                    </View>
+                    <View style={styles.eventDetails}>
                       <Text style={styles.eventTitle}>{reminder.title}</Text>
-                      {reminder.dueDate && (
-                        <Text style={styles.eventDate}>
-                          Due: {new Date(reminder.dueDate).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric' 
-                          })}
-                        </Text>
-                      )}
+                      <Text style={styles.eventSubtitle}>
+                        {reminder.dueDate && `Due ${new Date(reminder.dueDate).toLocaleTimeString('en-US', { 
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true 
+                        })}`}
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -371,9 +469,11 @@ export default function CalendarScreen() {
 
             {events.length === 0 && goals.length === 0 && reminders.length === 0 && (
               <View style={styles.emptyState}>
-                <IconSymbol name="calendar.badge.plus" color={colors.textSecondary} size={48} />
-                <Text style={styles.emptyText}>No upcoming events, goals, or reminders</Text>
-                <Text style={styles.emptySubtext}>Tap + to add an event</Text>
+                <View style={[styles.emptyIconCircle, { backgroundColor: colors.lightPeach }]}>
+                  <IconSymbol name="calendar.badge.plus" color={colors.peach} size={32} />
+                </View>
+                <Text style={styles.emptyText}>No upcoming events</Text>
+                <Text style={styles.emptySubtext}>Tap + to add your first event</Text>
               </View>
             )}
           </View>
@@ -423,10 +523,21 @@ export default function CalendarScreen() {
               {selectedEvents.length > 0 && (
                 <View style={styles.detailsSection}>
                   <Text style={styles.detailsSectionTitle}>Events</Text>
-                  {selectedEvents.map(event => (
-                    <View key={event.id} style={[styles.detailCard, { borderLeftColor: event.color }]}>
+                  {selectedEvents.map((event, index) => (
+                    <View 
+                      key={event.id} 
+                      style={[
+                        styles.detailCard,
+                        { backgroundColor: getEventBackgroundColor(event.type) }
+                      ]}
+                    >
                       <View style={styles.detailHeader}>
-                        <Text style={styles.detailEmoji}>{event.emoji || '📅'}</Text>
+                        <View style={[
+                          styles.detailIconCircle,
+                          { backgroundColor: getEventIconColor(event.type) }
+                        ]}>
+                          <Text style={styles.detailIconText}>{getEventIcon(event.type)}</Text>
+                        </View>
                         <View style={styles.detailInfo}>
                           <Text style={styles.detailTitle}>{event.title}</Text>
                           <Text style={styles.detailType}>{event.type.toUpperCase()}</Text>
@@ -444,10 +555,21 @@ export default function CalendarScreen() {
               {selectedGoals.length > 0 && (
                 <View style={styles.detailsSection}>
                   <Text style={styles.detailsSectionTitle}>Goals</Text>
-                  {selectedGoals.map(goal => (
-                    <View key={goal.id} style={[styles.detailCard, { borderLeftColor: goal.color }]}>
+                  {selectedGoals.map((goal, index) => (
+                    <View 
+                      key={goal.id} 
+                      style={[
+                        styles.detailCard,
+                        { backgroundColor: colors.lightMint }
+                      ]}
+                    >
                       <View style={styles.detailHeader}>
-                        <Text style={styles.detailEmoji}>{goal.emoji || '🎯'}</Text>
+                        <View style={[
+                          styles.detailIconCircle,
+                          { backgroundColor: colors.mint }
+                        ]}>
+                          <Text style={styles.detailIconText}>{goal.emoji || '🎯'}</Text>
+                        </View>
                         <View style={styles.detailInfo}>
                           <Text style={styles.detailTitle}>{goal.title}</Text>
                           <View style={styles.progressContainer}>
@@ -455,7 +577,7 @@ export default function CalendarScreen() {
                               <View 
                                 style={[
                                   styles.progressFill, 
-                                  { width: `${goal.progress}%`, backgroundColor: goal.color }
+                                  { width: `${goal.progress}%`, backgroundColor: colors.mint }
                                 ]} 
                               />
                             </View>
@@ -475,10 +597,21 @@ export default function CalendarScreen() {
               {selectedReminders.length > 0 && (
                 <View style={styles.detailsSection}>
                   <Text style={styles.detailsSectionTitle}>Reminders</Text>
-                  {selectedReminders.map(reminder => (
-                    <View key={reminder.id} style={[styles.detailCard, { borderLeftColor: colors.accent }]}>
+                  {selectedReminders.map((reminder, index) => (
+                    <View 
+                      key={reminder.id} 
+                      style={[
+                        styles.detailCard,
+                        { backgroundColor: colors.lightYellow }
+                      ]}
+                    >
                       <View style={styles.detailHeader}>
-                        <Text style={styles.detailEmoji}>⏰</Text>
+                        <View style={[
+                          styles.detailIconCircle,
+                          { backgroundColor: colors.yellow }
+                        ]}>
+                          <Text style={styles.detailIconText}>⏰</Text>
+                        </View>
                         <View style={styles.detailInfo}>
                           <Text style={styles.detailTitle}>{reminder.title}</Text>
                           {reminder.completed && (
@@ -493,8 +626,10 @@ export default function CalendarScreen() {
 
               {selectedEvents.length === 0 && selectedGoals.length === 0 && selectedReminders.length === 0 && (
                 <View style={styles.emptyState}>
-                  <IconSymbol name="calendar" color={colors.textSecondary} size={48} />
-                  <Text style={styles.emptyText}>No events, goals, or reminders on this day</Text>
+                  <View style={[styles.emptyIconCircle, { backgroundColor: colors.lightPeach }]}>
+                    <IconSymbol name="calendar" color={colors.peach} size={32} />
+                  </View>
+                  <Text style={styles.emptyText}>No events on this day</Text>
                   <Text style={styles.emptySubtext}>Tap + to add an event</Text>
                 </View>
               )}
@@ -543,12 +678,13 @@ export default function CalendarScreen() {
             />
 
             <View style={styles.typeSelector}>
-              {(['date', 'vacation', 'trip', 'event'] as const).map(type => (
+              {(['date', 'vacation', 'trip', 'event'] as const).map((type, index) => (
                 <TouchableOpacity
                   key={type}
                   style={[
                     styles.typeButton,
-                    newEvent.type === type && styles.typeButtonActive
+                    newEvent.type === type && styles.typeButtonActive,
+                    newEvent.type === type && { backgroundColor: getEventIconColor(type) }
                   ]}
                   onPress={() => {
                     console.log('Type selected:', type);
@@ -620,99 +756,120 @@ const styles = StyleSheet.create({
   scrollContentWithTabBar: {
     paddingBottom: 100,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 16,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleContainer: {
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 16 : 8,
+    paddingBottom: 24,
+  },
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
   calendarContainer: {
-    margin: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   calendar: {
-    borderRadius: 16,
+    borderRadius: 0,
   },
-  upcomingSection: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
+  eventsSection: {
+    paddingHorizontal: 20,
   },
   eventCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 12,
-    borderLeftWidth: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  goalCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  reminderCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  eventHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  eventEmoji: {
-    fontSize: 32,
-    marginRight: 12,
+  eventTime: {
+    marginRight: 16,
+    minWidth: 70,
   },
-  eventInfo: {
+  eventTimeText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  eventContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eventIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  eventIconText: {
+    fontSize: 24,
+  },
+  eventDetails: {
     flex: 1,
   },
   eventTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
-  eventType: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  eventDate: {
+  eventSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
-  },
-  goalProgress: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 2,
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    lineHeight: 20,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 12,
@@ -736,7 +893,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(233, 30, 99, 0.4)',
+    boxShadow: `0px 8px 24px ${colors.primary}40`,
     elevation: 6,
   },
   modalOverlay: {
@@ -746,15 +903,15 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
     minHeight: 400,
   },
   dateDetailsModal: {
     backgroundColor: colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
     maxHeight: '80%',
   },
@@ -769,7 +926,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
   },
   detailsSection: {
@@ -777,24 +934,29 @@ const styles = StyleSheet.create({
   },
   detailsSectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
   },
   detailCard: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 12,
-    borderLeftWidth: 4,
   },
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  detailEmoji: {
-    fontSize: 28,
-    marginRight: 12,
+  detailIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  detailIconText: {
+    fontSize: 24,
   },
   detailInfo: {
     flex: 1,
@@ -808,7 +970,7 @@ const styles = StyleSheet.create({
   detailType: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
@@ -821,7 +983,7 @@ const styles = StyleSheet.create({
   completedBadge: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.mint,
     marginTop: 4,
   },
   progressContainer: {
@@ -851,11 +1013,13 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.background,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   textArea: {
     height: 100,
@@ -868,16 +1032,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   typeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.textSecondary,
+    borderColor: colors.border,
   },
   typeButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderColor: 'transparent',
   },
   typeButtonText: {
     fontSize: 14,
@@ -889,8 +1052,8 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -899,7 +1062,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });
