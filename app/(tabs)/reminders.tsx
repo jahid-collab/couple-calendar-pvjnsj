@@ -129,7 +129,7 @@ export default function RemindersScreen() {
       style={styles.headerButton}
       activeOpacity={0.7}
     >
-      <IconSymbol name="plus" color={colors.primary} size={24} />
+      <IconSymbol name="plus" color={colors.lavender} size={26} />
     </TouchableOpacity>
   );
 
@@ -209,7 +209,7 @@ export default function RemindersScreen() {
                     </Text>
                     {reminder.dueDate && (
                       <View style={styles.dueDateContainer}>
-                        <IconSymbol name="calendar" color={colors.primary} size={14} />
+                        <IconSymbol name="calendar" color={colors.lavender} size={14} />
                         <Text style={styles.dueDate}>
                           {new Date(reminder.dueDate).toLocaleDateString('en-US', { 
                             month: 'short', 
@@ -304,7 +304,7 @@ export default function RemindersScreen() {
             onPress={handleOpenModal}
             activeOpacity={0.8}
           >
-            <IconSymbol name="plus" color="#FFFFFF" size={28} />
+            <IconSymbol name="plus" color="#FFFFFF" size={30} />
           </TouchableOpacity>
         )}
       </View>
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 160,
+    paddingBottom: 180,
   },
   statsCard: {
     backgroundColor: colors.card,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: isSmallScreen ? 28 : 36,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: colors.lavender,
     marginBottom: 6,
   },
   statLabel: {
@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.lavender,
+    borderColor: colors.lavender,
   },
   reminderContent: {
     flex: 1,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   dueDate: {
     fontSize: 12,
-    color: colors.primary,
+    color: colors.lavender,
     fontWeight: '500',
   },
   sharedBadge: {
@@ -545,26 +545,26 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: 'absolute',
-    right: 20,
-    bottom: 140,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
+    right: 24,
+    bottom: 100,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.lavender,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.5,
-        shadowRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.35,
+        shadowRadius: 20,
       },
       android: {
-        elevation: 12,
+        elevation: 16,
       },
     }),
-    zIndex: 1000,
+    zIndex: 9999,
   },
   modalOverlay: {
     flex: 1,
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.lavender,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

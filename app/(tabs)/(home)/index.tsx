@@ -321,7 +321,7 @@ export default function CalendarScreen() {
       style={styles.headerButton}
       activeOpacity={0.7}
     >
-      <IconSymbol name="plus" color={colors.text} size={24} />
+      <IconSymbol name="plus" color={colors.lavender} size={26} />
     </TouchableOpacity>
   );
 
@@ -605,7 +605,7 @@ export default function CalendarScreen() {
             onPress={handleOpenTypeSelection}
             activeOpacity={0.8}
           >
-            <IconSymbol name="plus" color="#FFFFFF" size={28} />
+            <IconSymbol name="plus" color="#FFFFFF" size={30} />
           </TouchableOpacity>
         )}
       </View>
@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 160,
+    paddingBottom: 180,
   },
   header: {
     flexDirection: 'row',
@@ -1142,26 +1142,26 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: 'absolute',
-    right: 20,
-    bottom: 140,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
+    right: 24,
+    bottom: 100,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.lavender,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.5,
-        shadowRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.35,
+        shadowRadius: 20,
       },
       android: {
-        elevation: 12,
+        elevation: 16,
       },
     }),
-    zIndex: 1000,
+    zIndex: 9999,
   },
   modalOverlay: {
     flex: 1,
@@ -1356,7 +1356,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   addButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.lavender,
     borderRadius: 16,
     padding: 18,
     alignItems: 'center',
