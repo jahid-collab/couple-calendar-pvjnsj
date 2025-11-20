@@ -304,7 +304,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+      style={styles.safeArea}
       edges={["top"]}
     >
       <ScrollView
@@ -315,28 +315,13 @@ export default function ProfileScreen() {
         ]}
       >
         {/* Profile Header */}
-        <GlassView
-          style={[
-            styles.profileHeader,
-            Platform.OS !== "ios" && {
-              backgroundColor: theme.dark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-            },
-          ]}
-          glassEffectStyle="regular"
-        >
+        <View style={styles.profileHeader}>
           <Pressable 
             onPress={handlePickImage} 
             style={styles.avatarContainer}
             disabled={uploadingImage}
           >
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
-              ]}
-            >
+            <View style={styles.avatar}>
               {profile?.avatar_url ? (
                 <Image
                   source={{ uri: profile.avatar_url }}
@@ -367,14 +352,14 @@ export default function ProfileScreen() {
 
           {!isEditingProfile ? (
             <React.Fragment>
-              <Text style={[styles.name, { color: theme.colors.text }]}>
+              <Text style={styles.name}>
                 {profile?.full_name || "User"}
               </Text>
-              <Text style={[styles.email, { color: theme.dark ? "#98989D" : "#666" }]}>
+              <Text style={styles.email}>
                 {user?.email || ""}
               </Text>
               {profile?.bio && (
-                <Text style={[styles.bio, { color: theme.dark ? "#B0B0B0" : "#888" }]}>
+                <Text style={styles.bio}>
                   {profile.bio}
                 </Text>
               )}
@@ -383,15 +368,9 @@ export default function ProfileScreen() {
             <React.Fragment>
               <View style={styles.editInputContainer}>
                 <TextInput
-                  style={[
-                    styles.editInput,
-                    {
-                      color: theme.colors.text,
-                      backgroundColor: theme.dark ? "#2C2C2E" : "#F5F5F5",
-                    },
-                  ]}
+                  style={styles.editInput}
                   placeholder="Full Name"
-                  placeholderTextColor={theme.dark ? "#666" : "#999"}
+                  placeholderTextColor="#999"
                   value={fullName}
                   onChangeText={setFullName}
                   editable={!loading}
@@ -399,16 +378,9 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.editInputContainer}>
                 <TextInput
-                  style={[
-                    styles.editInput,
-                    styles.bioInput,
-                    {
-                      color: theme.colors.text,
-                      backgroundColor: theme.dark ? "#2C2C2E" : "#F5F5F5",
-                    },
-                  ]}
+                  style={[styles.editInput, styles.bioInput]}
                   placeholder="Bio (optional)"
-                  placeholderTextColor={theme.dark ? "#666" : "#999"}
+                  placeholderTextColor="#999"
                   value={bio}
                   onChangeText={setBio}
                   multiline
@@ -438,47 +410,17 @@ export default function ProfileScreen() {
               </View>
             </React.Fragment>
           )}
-        </GlassView>
+        </View>
 
         {/* Partner Information */}
         {partnerProfile && (
           <Pressable onPress={handleViewPartnerProfile}>
-            <GlassView
-              style={[
-                styles.section,
-                Platform.OS !== "ios" && {
-                  backgroundColor: theme.dark
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(0,0,0,0.05)",
-                },
-              ]}
-              glassEffectStyle="regular"
-            >
+            <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <IconSymbol
-                  ios_icon_name="heart.fill"
-                  android_material_icon_name="favorite"
-                  size={24}
-                  color={colors.primary}
-                />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                  Partner
-                </Text>
-                <View style={styles.sectionHeaderSpacer} />
-                <IconSymbol
-                  ios_icon_name="chevron.right"
-                  android_material_icon_name="chevron_right"
-                  size={20}
-                  color={theme.dark ? "#666" : "#999"}
-                />
+                <Text style={styles.sectionTitle}>Partner</Text>
               </View>
               <View style={styles.partnerInfo}>
-                <View
-                  style={[
-                    styles.partnerAvatar,
-                    { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
-                  ]}
-                >
+                <View style={styles.partnerAvatar}>
                   {partnerProfile.avatar_url ? (
                     <Image
                       source={{ uri: partnerProfile.avatar_url }}
@@ -494,102 +436,47 @@ export default function ProfileScreen() {
                   )}
                 </View>
                 <View style={styles.partnerDetails}>
-                  <Text style={[styles.partnerName, { color: theme.colors.text }]}>
+                  <Text style={styles.partnerName}>
                     {partnerProfile.full_name || "Partner"}
                   </Text>
                   {partnerProfile.bio && (
-                    <Text
-                      style={[styles.partnerBio, { color: theme.dark ? "#B0B0B0" : "#888" }]}
-                      numberOfLines={2}
-                    >
+                    <Text style={styles.partnerBio} numberOfLines={2}>
                       {partnerProfile.bio}
                     </Text>
                   )}
                 </View>
               </View>
-            </GlassView>
+            </View>
           </Pressable>
         )}
 
         {/* Settings Section */}
-        <GlassView
-          style={[
-            styles.section,
-            Platform.OS !== "ios" && {
-              backgroundColor: theme.dark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-            },
-          ]}
-          glassEffectStyle="regular"
-        >
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <IconSymbol
-              ios_icon_name="gearshape.fill"
-              android_material_icon_name="settings"
-              size={24}
-              color={theme.dark ? "#98989D" : "#666"}
-            />
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Settings
-            </Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
           </View>
 
           {!isEditingProfile && (
             <Pressable style={styles.settingItem} onPress={handleEditProfile}>
               <View style={styles.settingLeft}>
-                <IconSymbol
-                  ios_icon_name="pencil"
-                  android_material_icon_name="edit"
-                  size={20}
-                  color={theme.dark ? "#98989D" : "#666"}
-                />
-                <Text style={[styles.settingText, { color: theme.colors.text }]}>
-                  Edit Profile
-                </Text>
+                <Text style={styles.settingText}>Edit Profile</Text>
               </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron_right"
-                size={20}
-                color={theme.dark ? "#666" : "#999"}
-              />
             </Pressable>
           )}
 
           {!isChangingPassword ? (
             <Pressable style={styles.settingItem} onPress={handleChangePassword}>
               <View style={styles.settingLeft}>
-                <IconSymbol
-                  ios_icon_name="lock.fill"
-                  android_material_icon_name="lock"
-                  size={20}
-                  color={theme.dark ? "#98989D" : "#666"}
-                />
-                <Text style={[styles.settingText, { color: theme.colors.text }]}>
-                  Change Password
-                </Text>
+                <Text style={styles.settingText}>Change Password</Text>
               </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron_right"
-                size={20}
-                color={theme.dark ? "#666" : "#999"}
-              />
             </Pressable>
           ) : (
             <View style={styles.passwordChangeContainer}>
               <View style={styles.passwordInputContainer}>
                 <TextInput
-                  style={[
-                    styles.passwordInput,
-                    {
-                      color: theme.colors.text,
-                      backgroundColor: theme.dark ? "#2C2C2E" : "#F5F5F5",
-                    },
-                  ]}
+                  style={styles.passwordInput}
                   placeholder="New Password"
-                  placeholderTextColor={theme.dark ? "#666" : "#999"}
+                  placeholderTextColor="#999"
                   value={newPassword}
                   onChangeText={setNewPassword}
                   secureTextEntry
@@ -598,15 +485,9 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.passwordInputContainer}>
                 <TextInput
-                  style={[
-                    styles.passwordInput,
-                    {
-                      color: theme.colors.text,
-                      backgroundColor: theme.dark ? "#2C2C2E" : "#F5F5F5",
-                    },
-                  ]}
+                  style={styles.passwordInput}
                   placeholder="Confirm Password"
-                  placeholderTextColor={theme.dark ? "#666" : "#999"}
+                  placeholderTextColor="#999"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry
@@ -635,81 +516,19 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
-        </GlassView>
+        </View>
 
         {/* Account Section */}
-        <GlassView
-          style={[
-            styles.section,
-            Platform.OS !== "ios" && {
-              backgroundColor: theme.dark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-            },
-          ]}
-          glassEffectStyle="regular"
-        >
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <IconSymbol
-              ios_icon_name="person.crop.circle"
-              android_material_icon_name="account_circle"
-              size={24}
-              color={theme.dark ? "#98989D" : "#666"}
-            />
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Account
-            </Text>
+            <Text style={styles.sectionTitle}>Account</Text>
           </View>
-
-          <Pressable style={styles.settingItem} onPress={handleSignOut}>
-            <View style={styles.settingLeft}>
-              <IconSymbol
-                ios_icon_name="arrow.right.square"
-                android_material_icon_name="logout"
-                size={20}
-                color={theme.dark ? "#98989D" : "#666"}
-              />
-              <Text style={[styles.settingText, { color: theme.colors.text }]}>
-                Sign Out
-              </Text>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron_right"
-              size={20}
-              color={theme.dark ? "#666" : "#999"}
-            />
-          </Pressable>
 
           <Pressable style={styles.settingItem} onPress={handleDeleteAccount}>
             <View style={styles.settingLeft}>
-              <IconSymbol
-                ios_icon_name="trash.fill"
-                android_material_icon_name="delete"
-                size={20}
-                color="#FF3B30"
-              />
-              <Text style={[styles.settingText, { color: "#FF3B30" }]}>
-                Delete Account
-              </Text>
+              <Text style={styles.deleteText}>Delete Account</Text>
             </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron_right"
-              size={20}
-              color={theme.dark ? "#666" : "#999"}
-            />
           </Pressable>
-        </GlassView>
-
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={[styles.appInfoText, { color: theme.dark ? "#666" : "#999" }]}>
-            Couple&apos;s Calendar
-          </Text>
-          <Text style={[styles.appInfoText, { color: theme.dark ? "#666" : "#999" }]}>
-            Version 1.0.0
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -719,9 +538,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: "#F5F5F5",
   },
   container: {
     flex: 1,
+    backgroundColor: "#F5F5F5",
   },
   contentContainer: {
     padding: 20,
@@ -735,6 +556,7 @@ const styles = StyleSheet.create({
     padding: 32,
     marginBottom: 16,
     gap: 12,
+    backgroundColor: "#FFFFFF",
   },
   avatarContainer: {
     position: "relative",
@@ -747,6 +569,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    backgroundColor: "#E0E0E0",
   },
   avatarImage: {
     width: 96,
@@ -769,14 +592,17 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
+    color: "#1A1A1A",
   },
   email: {
     fontSize: 16,
+    color: "#666",
   },
   bio: {
     fontSize: 14,
     textAlign: "center",
     marginTop: 4,
+    color: "#888",
   },
   editInputContainer: {
     width: "100%",
@@ -787,6 +613,8 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     width: "100%",
+    color: "#1A1A1A",
+    backgroundColor: "#F5F5F5",
   },
   bioInput: {
     minHeight: 80,
@@ -826,6 +654,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    backgroundColor: "#FFFFFF",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -833,12 +662,10 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
-  sectionHeaderSpacer: {
-    flex: 1,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#1A1A1A",
   },
   partnerInfo: {
     flexDirection: "row",
@@ -852,6 +679,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    backgroundColor: "#E0E0E0",
   },
   partnerAvatarImage: {
     width: 64,
@@ -864,10 +692,12 @@ const styles = StyleSheet.create({
   partnerName: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#1A1A1A",
   },
   partnerBio: {
     fontSize: 14,
     marginTop: 4,
+    color: "#888",
   },
   settingItem: {
     flexDirection: "row",
@@ -884,6 +714,11 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
+    color: "#1A1A1A",
+  },
+  deleteText: {
+    fontSize: 16,
+    color: "#FF3B30",
   },
   passwordChangeContainer: {
     marginTop: 12,
@@ -895,14 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-  },
-  appInfo: {
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 16,
-    gap: 4,
-  },
-  appInfoText: {
-    fontSize: 12,
+    color: "#1A1A1A",
+    backgroundColor: "#F5F5F5",
   },
 });
