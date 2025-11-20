@@ -69,6 +69,12 @@ export default function TabLayout() {
         <Stack.Screen name="goals" />
         <Stack.Screen name="reminders" />
         <Stack.Screen name="profile" />
+        <Stack.Screen 
+          name="partner-profile" 
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>

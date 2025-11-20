@@ -21,6 +21,7 @@ import { useCouple } from "@/hooks/useCouple";
 import { colors } from "@/styles/commonStyles";
 import { supabase } from "@/app/integrations/supabase/client";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -297,6 +298,10 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleViewPartnerProfile = () => {
+    router.push("/(tabs)/partner-profile");
+  };
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
@@ -437,63 +442,73 @@ export default function ProfileScreen() {
 
         {/* Partner Information */}
         {partnerProfile && (
-          <GlassView
-            style={[
-              styles.section,
-              Platform.OS !== "ios" && {
-                backgroundColor: theme.dark
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.05)",
-              },
-            ]}
-            glassEffectStyle="regular"
-          >
-            <View style={styles.sectionHeader}>
-              <IconSymbol
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Partner
-              </Text>
-            </View>
-            <View style={styles.partnerInfo}>
-              <View
-                style={[
-                  styles.partnerAvatar,
-                  { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
-                ]}
-              >
-                {partnerProfile.avatar_url ? (
-                  <Image
-                    source={{ uri: partnerProfile.avatar_url }}
-                    style={styles.partnerAvatarImage}
-                  />
-                ) : (
-                  <IconSymbol
-                    ios_icon_name="person.fill"
-                    android_material_icon_name="person"
-                    size={32}
-                    color={colors.secondary}
-                  />
-                )}
-              </View>
-              <View style={styles.partnerDetails}>
-                <Text style={[styles.partnerName, { color: theme.colors.text }]}>
-                  {partnerProfile.full_name || "Partner"}
+          <Pressable onPress={handleViewPartnerProfile}>
+            <GlassView
+              style={[
+                styles.section,
+                Platform.OS !== "ios" && {
+                  backgroundColor: theme.dark
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.05)",
+                },
+              ]}
+              glassEffectStyle="regular"
+            >
+              <View style={styles.sectionHeader}>
+                <IconSymbol
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                  Partner
                 </Text>
-                {partnerProfile.bio && (
-                  <Text
-                    style={[styles.partnerBio, { color: theme.dark ? "#B0B0B0" : "#888" }]}
-                  >
-                    {partnerProfile.bio}
-                  </Text>
-                )}
+                <View style={styles.sectionHeaderSpacer} />
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron_right"
+                  size={20}
+                  color={theme.dark ? "#666" : "#999"}
+                />
               </View>
-            </View>
-          </GlassView>
+              <View style={styles.partnerInfo}>
+                <View
+                  style={[
+                    styles.partnerAvatar,
+                    { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
+                  ]}
+                >
+                  {partnerProfile.avatar_url ? (
+                    <Image
+                      source={{ uri: partnerProfile.avatar_url }}
+                      style={styles.partnerAvatarImage}
+                    />
+                  ) : (
+                    <IconSymbol
+                      ios_icon_name="person.fill"
+                      android_material_icon_name="person"
+                      size={32}
+                      color={colors.secondary}
+                    />
+                  )}
+                </View>
+                <View style={styles.partnerDetails}>
+                  <Text style={[styles.partnerName, { color: theme.colors.text }]}>
+                    {partnerProfile.full_name || "Partner"}
+                  </Text>
+                  {partnerProfile.bio && (
+                    <Text
+                      style={[styles.partnerBio, { color: theme.dark ? "#B0B0B0" : "#888" }]}
+                      numberOfLines={2}
+                    >
+                      {partnerProfile.bio}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </GlassView>
+          </Pressable>
         )}
 
         {/* Settings Section */}
@@ -817,6 +832,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 16,
+  },
+  sectionHeaderSpacer: {
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 18,
