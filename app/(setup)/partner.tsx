@@ -25,6 +25,7 @@ export default function PartnerSetupScreen() {
   const { sendInvitation, loading: invitationLoading } = useInvitations();
   const [partnerEmail, setPartnerEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invitationSent, setInvitationSent] = useState(false);
 
   const handleSkip = () => {
     router.replace('/(tabs)/(home)');
@@ -58,7 +59,7 @@ export default function PartnerSetupScreen() {
       try {
         await createCouple(partnerEmail);
         Alert.alert(
-          'Success!',
+          'Success! 🎉',
           'You are now connected with your partner!',
           [{ text: 'OK', onPress: () => router.replace('/(tabs)/(home)') }]
         );
@@ -72,19 +73,25 @@ export default function PartnerSetupScreen() {
       const result = await sendInvitation(partnerEmail, inviterName);
 
       if (result.success) {
-        // Show success message with option to share invitation link
+        setInvitationSent(true);
+        
+        // Show success message
+        const message = result.emailSent
+          ? `Invitation sent to ${partnerEmail}! 📧\n\nThey will receive an email with a link to join. You can also share the invitation link directly.`
+          : `Invitation created! 📧\n\nShare the invitation link with ${partnerEmail} so they can join.`;
+
         Alert.alert(
-          'Invitation Sent! 📧',
-          `We've sent an invitation to ${partnerEmail}. Once they sign up and accept, you'll be automatically connected!\n\nYou can also share the invitation link directly.`,
+          'Invitation Sent! ✅',
+          message,
           [
             {
               text: 'Share Link',
               onPress: () => handleShareInvitation(result.invitationLink),
             },
             {
-              text: 'Done',
+              text: 'Continue to App',
               onPress: () => router.replace('/(tabs)/(home)'),
-              style: 'cancel',
+              style: 'default',
             },
           ]
         );
@@ -103,10 +110,56 @@ export default function PartnerSetupScreen() {
         message: `Join me on our Couple's Calendar app! 💕\n\nAccept my invitation here: ${invitationLink}`,
         title: 'Join Our Couple\'s Calendar',
       });
+      
+      // After sharing, navigate to the app
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)');
+      }, 500);
     } catch (error) {
       console.error('Error sharing invitation:', error);
+      // Still navigate to the app even if sharing fails
+      router.replace('/(tabs)/(home)');
     }
   };
+
+  // If invitation was sent, show success state
+  if (invitationSent) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={80} color="#4CAF50" />
+          </View>
+          <Text style={styles.title}>Invitation Sent! ✅</Text>
+          <Text style={styles.subtitle}>
+            Your partner will receive an invitation to join
+          </Text>
+        </View>
+
+        <View style={styles.infoBox}>
+          <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={24} color={colors.secondary} />
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoText}>
+              Once {partnerEmail} signs up and accepts the invitation, you&apos;ll be automatically connected!
+            </Text>
+            <Text style={[styles.infoText, styles.infoTextSpacing]}>
+              You can start using the app now and your partner will join you soon.
+            </Text>
+          </View>
+        </View>
+
+        <Pressable
+          style={styles.button}
+          onPress={() => router.replace('/(tabs)/(home)')}
+        >
+          <Text style={styles.buttonText}>Continue to App</Text>
+        </Pressable>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView

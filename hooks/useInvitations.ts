@@ -13,10 +13,18 @@ export interface PartnerInvitation {
   updated_at: string;
 }
 
+export interface SendInvitationResult {
+  success: boolean;
+  message: string;
+  invitationLink: string;
+  invitationToken: string;
+  emailSent: boolean;
+}
+
 export function useInvitations() {
   const [loading, setLoading] = useState(false);
 
-  const sendInvitation = async (inviteeEmail: string, inviterName: string) => {
+  const sendInvitation = async (inviteeEmail: string, inviterName: string): Promise<SendInvitationResult> => {
     setLoading(true);
     try {
       // Get the current session
@@ -49,7 +57,7 @@ export function useInvitations() {
         throw new Error(data.error || 'Failed to send invitation');
       }
 
-      return data;
+      return data as SendInvitationResult;
     } catch (error) {
       console.error('Error sending invitation:', error);
       throw error;
