@@ -25,21 +25,34 @@ import { useEvents } from '@/hooks/useEvents';
 import { useGoals } from '@/hooks/useGoals';
 import { useReminders } from '@/hooks/useReminders';
 
+type AddItemType = 'event' | 'goal' | 'reminder';
+
 export default function CalendarScreen() {
   const theme = useTheme();
   const { user } = useAuth();
   const { couple } = useCouple(user?.id);
   const { events, loading: eventsLoading, addEvent } = useEvents(couple?.id);
-  const { goals, loading: goalsLoading } = useGoals(couple?.id);
-  const { reminders, loading: remindersLoading } = useReminders(couple?.id);
+  const { goals, loading: goalsLoading, addGoal } = useGoals(couple?.id);
+  const { reminders, loading: remindersLoading, addReminder } = useReminders(couple?.id);
   const [selectedDate, setSelectedDate] = useState('');
+  const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
+  const [addItemType, setAddItemType] = useState<AddItemType>('event');
   const [saving, setSaving] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     type: 'date' as Event['type'],
     description: '',
+  });
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    description: '',
+    targetDate: '',
+  });
+  const [newReminder, setNewReminder] = useState({
+    title: '',
+    dueDate: '',
   });
 
   const loading = eventsLoading || goalsLoading || remindersLoading;
@@ -177,27 +190,134 @@ export default function CalendarScreen() {
     }
   };
 
-  const handleOpenModal = () => {
-    console.log('=== handleOpenModal called ===');
+  const handleAddGoal = async () => {
+    console.log('=== handleAddGoal called ===');
+    console.log('newGoal:', newGoal);
     console.log('selectedDate:', selectedDate);
+
+    if (!newGoal.title || !newGoal.description) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add goals');
+      return;
+    }
+
+    if (!couple?.id) {
+      Alert.alert('Error', 'You must be connected with a partner to add goals');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const goalColors = [colors.mint, colors.lavender, colors.pink, colors.yellow];
+      const goal = {
+        title: newGoal.title,
+        description: newGoal.description,
+        targetDate: newGoal.targetDate || selectedDate || undefined,
+        color: goalColors[Math.floor(Math.random() * goalColors.length)],
+        emoji: '🎯',
+      };
+
+      console.log('Adding goal:', goal);
+      await addGoal(goal, user.id);
+      
+      setShowAddModal(false);
+      setNewGoal({ title: '', description: '', targetDate: '' });
+      Alert.alert('Success', 'Goal added successfully!');
+    } catch (error: any) {
+      console.error('Error adding goal:', error);
+      Alert.alert('Error', error.message || 'Failed to add goal. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddReminder = async () => {
+    console.log('=== handleAddReminder called ===');
+    console.log('newReminder:', newReminder);
+    console.log('selectedDate:', selectedDate);
+
+    if (!newReminder.title) {
+      Alert.alert('Error', 'Please enter a reminder title');
+      return;
+    }
+
+    if (!user || !couple) {
+      Alert.alert('Error', 'You must be connected with a partner to add reminders');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      console.log('Attempting to add reminder...');
+      await addReminder(
+        {
+          title: newReminder.title,
+          dueDate: newReminder.dueDate || selectedDate || undefined,
+          shared: true,
+        },
+        user.id
+      );
+
+      console.log('Reminder added successfully');
+      setShowAddModal(false);
+      setNewReminder({ title: '', dueDate: '' });
+      Alert.alert('Success', 'Reminder added successfully!');
+    } catch (error: any) {
+      console.error('=== Error adding reminder ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      Alert.alert('Error', error.message || 'Failed to add reminder. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (addItemType === 'event') {
+      await handleAddEvent();
+    } else if (addItemType === 'goal') {
+      await handleAddGoal();
+    } else if (addItemType === 'reminder') {
+      await handleAddReminder();
+    }
+  };
+
+  const handleOpenTypeSelection = () => {
+    console.log('=== handleOpenTypeSelection called ===');
     console.log('couple:', couple);
     console.log('user:', user);
     
-    if (!selectedDate) {
-      Alert.alert('Select a Date', 'Please select a date first to add an event');
-      return;
-    }
     if (!couple) {
-      Alert.alert('Connect with Partner', 'Please connect with your partner first to add events');
+      Alert.alert('Connect with Partner', 'Please connect with your partner first to add items');
       return;
     }
-    console.log('Opening modal...');
+    console.log('Opening type selection modal...');
+    setShowTypeSelectionModal(true);
+  };
+
+  const handleSelectType = (type: AddItemType) => {
+    console.log('Type selected:', type);
+    setAddItemType(type);
+    setShowTypeSelectionModal(false);
+    
+    // Get today's date if no date is selected
+    if (!selectedDate) {
+      const today = new Date().toISOString().split('T')[0];
+      setSelectedDate(today);
+    }
+    
     setShowAddModal(true);
   };
 
   const renderHeaderRight = () => (
     <TouchableOpacity
-      onPress={handleOpenModal}
+      onPress={handleOpenTypeSelection}
       style={styles.headerButton}
       activeOpacity={0.7}
     >
@@ -473,7 +593,7 @@ export default function CalendarScreen() {
                   <IconSymbol name="calendar.badge.plus" color={colors.peach} size={32} />
                 </View>
                 <Text style={styles.emptyText}>No upcoming events</Text>
-                <Text style={styles.emptySubtext}>Tap + to add your first event</Text>
+                <Text style={styles.emptySubtext}>Tap + to add your first event, goal, or reminder</Text>
               </View>
             )}
           </View>
@@ -482,13 +602,82 @@ export default function CalendarScreen() {
         {Platform.OS !== 'ios' && (
           <TouchableOpacity
             style={styles.floatingButton}
-            onPress={handleOpenModal}
+            onPress={handleOpenTypeSelection}
             activeOpacity={0.8}
           >
             <IconSymbol name="plus" color="#FFFFFF" size={28} />
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Type Selection Modal */}
+      <Modal
+        visible={showTypeSelectionModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTypeSelectionModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowTypeSelectionModal(false)}
+        >
+          <Pressable 
+            style={styles.typeSelectionModal}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>What would you like to add?</Text>
+              <TouchableOpacity onPress={() => setShowTypeSelectionModal(false)}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.typeOptionsContainer}>
+              <TouchableOpacity
+                style={[styles.typeOptionCard, { backgroundColor: colors.lightPeach }]}
+                onPress={() => handleSelectType('event')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.typeOptionIcon, { backgroundColor: colors.peach }]}>
+                  <Text style={styles.typeOptionEmoji}>📅</Text>
+                </View>
+                <Text style={styles.typeOptionTitle}>Event</Text>
+                <Text style={styles.typeOptionDescription}>
+                  Add a date, vacation, trip, or special event
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.typeOptionCard, { backgroundColor: colors.lightMint }]}
+                onPress={() => handleSelectType('goal')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.typeOptionIcon, { backgroundColor: colors.mint }]}>
+                  <Text style={styles.typeOptionEmoji}>🎯</Text>
+                </View>
+                <Text style={styles.typeOptionTitle}>Goal</Text>
+                <Text style={styles.typeOptionDescription}>
+                  Create a shared goal with progress tracking
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.typeOptionCard, { backgroundColor: colors.lightYellow }]}
+                onPress={() => handleSelectType('reminder')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.typeOptionIcon, { backgroundColor: colors.yellow }]}>
+                  <Text style={styles.typeOptionEmoji}>⏰</Text>
+                </View>
+                <Text style={styles.typeOptionTitle}>Reminder</Text>
+                <Text style={styles.typeOptionDescription}>
+                  Set a reminder for something important
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Date Details Modal */}
       <Modal
@@ -630,7 +819,7 @@ export default function CalendarScreen() {
                     <IconSymbol name="calendar" color={colors.peach} size={32} />
                   </View>
                   <Text style={styles.emptyText}>No events on this day</Text>
-                  <Text style={styles.emptySubtext}>Tap + to add an event</Text>
+                  <Text style={styles.emptySubtext}>Tap + to add an event, goal, or reminder</Text>
                 </View>
               )}
             </ScrollView>
@@ -638,7 +827,7 @@ export default function CalendarScreen() {
         </Pressable>
       </Modal>
 
-      {/* Add Event Modal */}
+      {/* Add Item Modal */}
       <Modal
         visible={showAddModal}
         animationType="slide"
@@ -660,71 +849,139 @@ export default function CalendarScreen() {
             }}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Event</Text>
+              <Text style={styles.modalTitle}>
+                {addItemType === 'event' && 'Add Event'}
+                {addItemType === 'goal' && 'Add Goal'}
+                {addItemType === 'reminder' && 'Add Reminder'}
+              </Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <IconSymbol name="xmark" color={colors.text} size={24} />
               </TouchableOpacity>
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Event title"
-              placeholderTextColor={colors.textSecondary}
-              value={newEvent.title}
-              onChangeText={(text) => {
-                console.log('Title changed:', text);
-                setNewEvent({ ...newEvent, title: text });
-              }}
-            />
-
-            <View style={styles.typeSelector}>
-              {(['date', 'vacation', 'trip', 'event'] as const).map((type, index) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.typeButton,
-                    newEvent.type === type && styles.typeButtonActive,
-                    newEvent.type === type && { backgroundColor: getEventIconColor(type) }
-                  ]}
-                  onPress={() => {
-                    console.log('Type selected:', type);
-                    setNewEvent({ ...newEvent, type });
+            {addItemType === 'event' && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Event title"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newEvent.title}
+                  onChangeText={(text) => {
+                    console.log('Title changed:', text);
+                    setNewEvent({ ...newEvent, title: text });
                   }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.typeButtonText,
-                    newEvent.type === type && styles.typeButtonTextActive
-                  ]}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                />
 
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Description (optional)"
-              placeholderTextColor={colors.textSecondary}
-              value={newEvent.description}
-              onChangeText={(text) => {
-                console.log('Description changed:', text);
-                setNewEvent({ ...newEvent, description: text });
-              }}
-              multiline
-              numberOfLines={3}
-            />
+                <View style={styles.typeSelector}>
+                  {(['date', 'vacation', 'trip', 'event'] as const).map((type, index) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.typeButton,
+                        newEvent.type === type && styles.typeButtonActive,
+                        newEvent.type === type && { backgroundColor: getEventIconColor(type) }
+                      ]}
+                      onPress={() => {
+                        console.log('Type selected:', type);
+                        setNewEvent({ ...newEvent, type });
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.typeButtonText,
+                        newEvent.type === type && styles.typeButtonTextActive
+                      ]}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Description (optional)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newEvent.description}
+                  onChangeText={(text) => {
+                    console.log('Description changed:', text);
+                    setNewEvent({ ...newEvent, description: text });
+                  }}
+                  multiline
+                  numberOfLines={3}
+                />
+              </>
+            )}
+
+            {addItemType === 'goal' && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Goal title"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newGoal.title}
+                  onChangeText={(text) => setNewGoal({ ...newGoal, title: text })}
+                />
+
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Description"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newGoal.description}
+                  onChangeText={(text) => setNewGoal({ ...newGoal, description: text })}
+                  multiline
+                  numberOfLines={3}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Target date (${selectedDate || 'YYYY-MM-DD'})`}
+                  placeholderTextColor={colors.textSecondary}
+                  value={newGoal.targetDate}
+                  onChangeText={(text) => setNewGoal({ ...newGoal, targetDate: text })}
+                />
+              </>
+            )}
+
+            {addItemType === 'reminder' && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="What do you need to remember?"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newReminder.title}
+                  onChangeText={(text) => {
+                    console.log('Title changed:', text);
+                    setNewReminder({ ...newReminder, title: text });
+                  }}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Due date (${selectedDate || 'YYYY-MM-DD'})`}
+                  placeholderTextColor={colors.textSecondary}
+                  value={newReminder.dueDate}
+                  onChangeText={(text) => {
+                    console.log('Due date changed:', text);
+                    setNewReminder({ ...newReminder, dueDate: text });
+                  }}
+                />
+              </>
+            )}
 
             <TouchableOpacity 
               style={[styles.addButton, saving && styles.buttonDisabled]} 
-              onPress={handleAddEvent}
+              onPress={handleSubmit}
               disabled={saving}
               activeOpacity={0.8}
             >
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.addButtonText}>Add Event</Text>
+                <Text style={styles.addButtonText}>
+                  {addItemType === 'event' && 'Add Event'}
+                  {addItemType === 'goal' && 'Add Goal'}
+                  {addItemType === 'reminder' && 'Add Reminder'}
+                </Text>
               )}
             </TouchableOpacity>
           </Pressable>
@@ -908,6 +1165,13 @@ const styles = StyleSheet.create({
     padding: 24,
     minHeight: 400,
   },
+  typeSelectionModal: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    maxHeight: '70%',
+  },
   dateDetailsModal: {
     backgroundColor: colors.card,
     borderTopLeftRadius: 28,
@@ -928,6 +1192,37 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
+  },
+  typeOptionsContainer: {
+    gap: 16,
+  },
+  typeOptionCard: {
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  typeOptionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  typeOptionEmoji: {
+    fontSize: 32,
+  },
+  typeOptionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  typeOptionDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   detailsSection: {
     marginBottom: 24,
