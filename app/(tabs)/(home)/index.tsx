@@ -315,16 +315,6 @@ export default function CalendarScreen() {
     setShowAddModal(true);
   };
 
-  const renderHeaderRight = () => (
-    <TouchableOpacity
-      onPress={handleOpenTypeSelection}
-      style={styles.headerButton}
-      activeOpacity={0.7}
-    >
-      <IconSymbol name="plus" color={colors.lavender} size={26} />
-    </TouchableOpacity>
-  );
-
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'vacation': return '🏖️';
@@ -370,7 +360,6 @@ export default function CalendarScreen() {
         <Stack.Screen
           options={{
             title: 'November',
-            headerRight: renderHeaderRight,
             headerLargeTitle: false,
           }}
         />
@@ -436,6 +425,18 @@ export default function CalendarScreen() {
               style={styles.calendar}
               hideExtraDays={true}
             />
+          </View>
+
+          {/* Add Button */}
+          <View style={styles.addButtonContainer}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleOpenTypeSelection}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" color="#FFFFFF" size={20} />
+              <Text style={styles.addButtonText}>Add Event, Goal, or Reminder</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Events List */}
@@ -593,21 +594,11 @@ export default function CalendarScreen() {
                   <IconSymbol name="calendar.badge.plus" color={colors.peach} size={32} />
                 </View>
                 <Text style={styles.emptyText}>No upcoming events</Text>
-                <Text style={styles.emptySubtext}>Tap + to add your first event, goal, or reminder</Text>
+                <Text style={styles.emptySubtext}>Tap the Add button to create your first event, goal, or reminder</Text>
               </View>
             )}
           </View>
         </ScrollView>
-
-        {Platform.OS !== 'ios' && (
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={handleOpenTypeSelection}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="plus" color="#FFFFFF" size={30} />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Type Selection Modal */}
@@ -819,7 +810,7 @@ export default function CalendarScreen() {
                     <IconSymbol name="calendar" color={colors.peach} size={32} />
                   </View>
                   <Text style={styles.emptyText}>No events on this day</Text>
-                  <Text style={styles.emptySubtext}>Tap + to add an event, goal, or reminder</Text>
+                  <Text style={styles.emptySubtext}>Tap the Add button to create an event, goal, or reminder</Text>
                 </View>
               )}
             </ScrollView>
@@ -969,7 +960,7 @@ export default function CalendarScreen() {
             )}
 
             <TouchableOpacity 
-              style={[styles.addButton, saving && styles.buttonDisabled]} 
+              style={[styles.submitButton, saving && styles.buttonDisabled]} 
               onPress={handleSubmit}
               disabled={saving}
               activeOpacity={0.8}
@@ -977,7 +968,7 @@ export default function CalendarScreen() {
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.addButtonText}>
+                <Text style={styles.submitButtonText}>
                   {addItemType === 'event' && 'Add Event'}
                   {addItemType === 'goal' && 'Add Goal'}
                   {addItemType === 'reminder' && 'Add Reminder'}
@@ -1011,7 +1002,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 180,
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -1064,6 +1055,36 @@ const styles = StyleSheet.create({
   },
   calendar: {
     borderRadius: 0,
+  },
+  addButtonContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  addButton: {
+    backgroundColor: colors.lavender,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   eventsSection: {
     paddingHorizontal: 20,
@@ -1135,33 +1156,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
-  },
-  headerButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  floatingButton: {
-    position: 'absolute',
-    right: 24,
-    bottom: 100,
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.lavender,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 16,
-      },
-    }),
-    zIndex: 9999,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -1355,7 +1350,7 @@ const styles = StyleSheet.create({
   typeButtonTextActive: {
     color: '#FFFFFF',
   },
-  addButton: {
+  submitButton: {
     backgroundColor: colors.lavender,
     borderRadius: 16,
     padding: 18,
@@ -1365,7 +1360,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-  addButtonText: {
+  submitButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',

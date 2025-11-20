@@ -123,16 +123,6 @@ export default function RemindersScreen() {
     setShowAddModal(true);
   };
 
-  const renderHeaderRight = () => (
-    <TouchableOpacity
-      onPress={handleOpenModal}
-      style={styles.headerButton}
-      activeOpacity={0.7}
-    >
-      <IconSymbol name="plus" color={colors.lavender} size={26} />
-    </TouchableOpacity>
-  );
-
   const activeReminders = reminders.filter(r => !r.completed);
   const completedReminders = reminders.filter(r => r.completed);
 
@@ -151,7 +141,6 @@ export default function RemindersScreen() {
         <Stack.Screen
           options={{
             title: 'Reminders',
-            headerRight: renderHeaderRight,
           }}
         />
       )}
@@ -179,6 +168,18 @@ export default function RemindersScreen() {
               <Text style={styles.statNumber}>{reminders.length}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
+          </View>
+
+          {/* Add Button */}
+          <View style={styles.addButtonContainer}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleOpenModal}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" color="#FFFFFF" size={20} />
+              <Text style={styles.addButtonText}>Add Reminder</Text>
+            </TouchableOpacity>
           </View>
 
           {activeReminders.length > 0 && (
@@ -293,20 +294,10 @@ export default function RemindersScreen() {
             <View style={styles.emptyState}>
               <IconSymbol name="checklist" color={colors.textSecondary} size={64} />
               <Text style={styles.emptyText}>No reminders yet</Text>
-              <Text style={styles.emptySubtext}>Tap + to add your first reminder</Text>
+              <Text style={styles.emptySubtext}>Tap the Add Reminder button to create your first reminder</Text>
             </View>
           )}
         </ScrollView>
-
-        {Platform.OS !== 'ios' && (
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={handleOpenModal}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="plus" color="#FFFFFF" size={30} />
-          </TouchableOpacity>
-        )}
       </View>
 
       <Modal
@@ -359,7 +350,7 @@ export default function RemindersScreen() {
             />
 
             <TouchableOpacity 
-              style={[styles.addButton, saving && styles.buttonDisabled]} 
+              style={[styles.submitButton, saving && styles.buttonDisabled]} 
               onPress={handleAddReminder}
               disabled={saving}
               activeOpacity={0.8}
@@ -367,7 +358,7 @@ export default function RemindersScreen() {
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.addButtonText}>Add Reminder</Text>
+                <Text style={styles.submitButtonText}>Add Reminder</Text>
               )}
             </TouchableOpacity>
           </Pressable>
@@ -399,7 +390,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 180,
+    paddingBottom: 100,
   },
   statsCard: {
     backgroundColor: colors.card,
@@ -441,6 +432,35 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: colors.border,
     marginVertical: 12,
+  },
+  addButtonContainer: {
+    marginBottom: 24,
+  },
+  addButton: {
+    backgroundColor: colors.lavender,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   section: {
     marginBottom: 24,
@@ -538,33 +558,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 8,
-  },
-  headerButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  floatingButton: {
-    position: 'absolute',
-    right: 24,
-    bottom: 100,
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.lavender,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 16,
-      },
-    }),
-    zIndex: 9999,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -597,7 +591,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 16,
   },
-  addButton: {
+  submitButton: {
     backgroundColor: colors.lavender,
     borderRadius: 12,
     padding: 16,
@@ -607,7 +601,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-  addButtonText: {
+  submitButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',

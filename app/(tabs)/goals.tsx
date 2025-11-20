@@ -102,16 +102,6 @@ export default function GoalsScreen() {
     setShowAddModal(true);
   };
 
-  const renderHeaderRight = () => (
-    <TouchableOpacity
-      onPress={handleOpenModal}
-      style={styles.headerButton}
-      activeOpacity={0.7}
-    >
-      <IconSymbol name="plus" color={colors.lavender} size={26} />
-    </TouchableOpacity>
-  );
-
   const ProgressCircle = ({ progress, size = 120, color }: { progress: number; size?: number; color: string }) => {
     const strokeWidth = 12;
     const radius = (size - strokeWidth) / 2;
@@ -188,7 +178,6 @@ export default function GoalsScreen() {
         <Stack.Screen
           options={{
             title: 'Shared Goals',
-            headerRight: renderHeaderRight,
           }}
         />
       )}
@@ -217,11 +206,23 @@ export default function GoalsScreen() {
             </View>
           </View>
 
+          {/* Add Button */}
+          <View style={styles.addButtonContainer}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleOpenModal}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" color="#FFFFFF" size={20} />
+              <Text style={styles.addButtonText}>Add Goal</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.goalsSection}>
             <Text style={styles.sectionTitle}>Active Goals</Text>
             {goals.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No goals yet. Tap the + button to add your first goal!</Text>
+                <Text style={styles.emptyStateText}>No goals yet. Tap the Add Goal button to create your first goal!</Text>
               </View>
             ) : (
               goals.map(goal => (
@@ -274,16 +275,6 @@ export default function GoalsScreen() {
             )}
           </View>
         </ScrollView>
-
-        {Platform.OS !== 'ios' && (
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={handleOpenModal}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="plus" color="#FFFFFF" size={30} />
-          </TouchableOpacity>
-        )}
       </View>
 
       <Modal
@@ -327,8 +318,8 @@ export default function GoalsScreen() {
               onChangeText={(text) => setNewGoal({ ...newGoal, targetDate: text })}
             />
 
-            <Pressable style={styles.addButton} onPress={handleAddGoal}>
-              <Text style={styles.addButtonText}>Add Goal</Text>
+            <Pressable style={styles.submitButton} onPress={handleAddGoal}>
+              <Text style={styles.submitButtonText}>Add Goal</Text>
             </Pressable>
           </View>
         </View>
@@ -349,7 +340,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 60 : 0,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 180,
+    paddingBottom: 100,
   },
   headerSection: {
     padding: 16,
@@ -414,6 +405,36 @@ const styles = StyleSheet.create({
   goalsCount: {
     fontSize: isSmallScreen ? 12 : 14,
     color: colors.textSecondary,
+  },
+  addButtonContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  addButton: {
+    backgroundColor: colors.lavender,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   goalsSection: {
     paddingHorizontal: 16,
@@ -516,33 +537,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  floatingButton: {
-    position: 'absolute',
-    right: 24,
-    bottom: 100,
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.lavender,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 16,
-      },
-    }),
-    zIndex: 9999,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -578,14 +572,14 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  addButton: {
+  submitButton: {
     backgroundColor: colors.lavender,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  addButtonText: {
+  submitButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
