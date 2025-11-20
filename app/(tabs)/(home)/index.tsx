@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 100,
+    paddingBottom: 160,
   },
   header: {
     flexDirection: 'row',
@@ -1143,15 +1143,24 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     right: 20,
-    bottom: 100,
+    bottom: 120,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: `0px 8px 24px ${colors.primary}40`,
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   modalOverlay: {
     flex: 1,

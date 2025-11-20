@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -84,13 +85,27 @@ export default function GoalsScreen() {
     }
   };
 
+  const handleOpenModal = () => {
+    console.log('=== handleOpenModal called ===');
+    console.log('couple:', couple);
+    console.log('user:', user);
+    
+    if (!couple) {
+      Alert.alert('Connect with Partner', 'Please connect with your partner first to add goals');
+      return;
+    }
+    console.log('Opening modal...');
+    setShowAddModal(true);
+  };
+
   const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => setShowAddModal(true)}
+    <TouchableOpacity
+      onPress={handleOpenModal}
       style={styles.headerButton}
+      activeOpacity={0.7}
     >
       <IconSymbol name="plus" color={colors.primary} size={24} />
-    </Pressable>
+    </TouchableOpacity>
   );
 
   const ProgressCircle = ({ progress, size = 120, color }: { progress: number; size?: number; color: string }) => {
@@ -253,12 +268,13 @@ export default function GoalsScreen() {
         </ScrollView>
 
         {Platform.OS !== 'ios' && (
-          <Pressable
+          <TouchableOpacity
             style={styles.floatingButton}
-            onPress={() => setShowAddModal(true)}
+            onPress={handleOpenModal}
+            activeOpacity={0.8}
           >
             <IconSymbol name="plus" color="#FFFFFF" size={28} />
-          </Pressable>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -324,7 +340,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
-    paddingBottom: 100,
+    paddingBottom: 160,
   },
   headerSection: {
     padding: 16,
@@ -341,8 +357,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   progressCircleContainer: {
     position: 'relative',
@@ -405,8 +430,17 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   goalHeader: {
     flexDirection: 'row',
@@ -474,19 +508,29 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    marginRight: 8,
   },
   floatingButton: {
     position: 'absolute',
     right: 20,
-    bottom: 100,
+    bottom: 120,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(233, 30, 99, 0.4)',
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   modalOverlay: {
     flex: 1,
