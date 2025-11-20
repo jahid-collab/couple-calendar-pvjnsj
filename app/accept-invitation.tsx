@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,13 +22,7 @@ export default function AcceptInvitationScreen() {
   const [invitation, setInvitation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (token && !authLoading) {
-      loadInvitation();
-    }
-  }, [token, authLoading]);
-
-  const loadInvitation = async () => {
+  const loadInvitation = useCallback(async () => {
     try {
       const invitationData = await getInvitationByToken(token);
       
@@ -53,7 +47,13 @@ export default function AcceptInvitationScreen() {
       console.error('Error loading invitation:', err);
       setError('Failed to load invitation');
     }
-  };
+  }, [token, getInvitationByToken]);
+
+  useEffect(() => {
+    if (token && !authLoading) {
+      loadInvitation();
+    }
+  }, [token, authLoading, loadInvitation]);
 
   const handleAccept = async () => {
     if (!user) {

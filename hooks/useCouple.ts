@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Database } from '@/app/integrations/supabase/types';
 
@@ -12,16 +12,7 @@ export function useCouple(userId: string | undefined) {
   const [partnerProfile, setPartnerProfile] = useState<CoupleProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    fetchCoupleData();
-  }, [userId]);
-
-  const fetchCoupleData = async () => {
+  const fetchCoupleData = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -74,7 +65,16 @@ export function useCouple(userId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    fetchCoupleData();
+  }, [userId, fetchCoupleData]);
 
   const createCouple = async (partnerEmail: string) => {
     if (!userId) throw new Error('User not authenticated');

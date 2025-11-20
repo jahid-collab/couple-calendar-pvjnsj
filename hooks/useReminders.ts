@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Database } from '@/app/integrations/supabase/types';
 import { Reminder } from '@/types/Event';
@@ -10,6 +10,38 @@ type ReminderInsert = Database['public']['Tables']['reminders']['Insert'];
 export function useReminders(coupleId: string | null | undefined) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchReminders = useCallback(async () => {
+    if (!coupleId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('*')
+        .eq('couple_id', coupleId)
+        .order('due_date', { ascending: true, nullsFirst: false });
+
+      if (error) {
+        console.error('Error fetching reminders:', error);
+        throw error;
+      }
+
+      // Convert database format to app format
+      const formattedReminders: Reminder[] = (data || []).map((reminder: ReminderRow) => ({
+        id: reminder.id,
+        title: reminder.title,
+        completed: reminder.completed,
+        dueDate: reminder.due_date || undefined,
+        shared: reminder.shared,
+      }));
+
+      setReminders(formattedReminders);
+    } catch (error) {
+      console.error('Error in fetchReminders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [coupleId]);
 
   useEffect(() => {
     if (!coupleId) {
@@ -40,39 +72,7 @@ export function useReminders(coupleId: string | null | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [coupleId]);
-
-  const fetchReminders = async () => {
-    if (!coupleId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .eq('couple_id', coupleId)
-        .order('due_date', { ascending: true, nullsFirst: false });
-
-      if (error) {
-        console.error('Error fetching reminders:', error);
-        throw error;
-      }
-
-      // Convert database format to app format
-      const formattedReminders: Reminder[] = (data || []).map((reminder: ReminderRow) => ({
-        id: reminder.id,
-        title: reminder.title,
-        completed: reminder.completed,
-        dueDate: reminder.due_date || undefined,
-        shared: reminder.shared,
-      }));
-
-      setReminders(formattedReminders);
-    } catch (error) {
-      console.error('Error in fetchReminders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [coupleId, fetchReminders]);
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'completed'>, userId: string) => {
     if (!coupleId) throw new Error('No couple ID');

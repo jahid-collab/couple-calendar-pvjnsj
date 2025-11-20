@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,13 +30,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [invitationEmail, setInvitationEmail] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (invitationToken) {
-      loadInvitationEmail();
-    }
-  }, [invitationToken]);
-
-  const loadInvitationEmail = async () => {
+  const loadInvitationEmail = useCallback(async () => {
     if (!invitationToken) return;
     
     try {
@@ -49,7 +43,13 @@ export default function LoginScreen() {
     } catch (error) {
       console.error('Error loading invitation:', error);
     }
-  };
+  }, [invitationToken, getInvitationByToken]);
+
+  useEffect(() => {
+    if (invitationToken) {
+      loadInvitationEmail();
+    }
+  }, [invitationToken, loadInvitationEmail]);
 
   const handleAuth = async () => {
     if (!email || !password) {

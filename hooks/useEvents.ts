@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Database } from '@/app/integrations/supabase/types';
 import { Event } from '@/types/Event';
@@ -11,40 +11,7 @@ export function useEvents(coupleId: string | null | undefined) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    console.log('useEvents: coupleId changed:', coupleId);
-    if (!coupleId) {
-      console.log('useEvents: No coupleId, setting loading to false');
-      setLoading(false);
-      return;
-    }
-
-    fetchEvents();
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('events_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'events',
-          filter: `couple_id=eq.${coupleId}`,
-        },
-        (payload) => {
-          console.log('Events changed, payload:', payload);
-          fetchEvents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [coupleId]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     if (!coupleId) {
       console.log('fetchEvents: No coupleId');
       return;
@@ -83,7 +50,40 @@ export function useEvents(coupleId: string | null | undefined) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [coupleId]);
+
+  useEffect(() => {
+    console.log('useEvents: coupleId changed:', coupleId);
+    if (!coupleId) {
+      console.log('useEvents: No coupleId, setting loading to false');
+      setLoading(false);
+      return;
+    }
+
+    fetchEvents();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('events_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'events',
+          filter: `couple_id=eq.${coupleId}`,
+        },
+        (payload) => {
+          console.log('Events changed, payload:', payload);
+          fetchEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [coupleId, fetchEvents]);
 
   const addEvent = async (event: Omit<Event, 'id'>, userId: string) => {
     console.log('=== addEvent called ===');

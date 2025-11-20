@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Database } from '@/app/integrations/supabase/types';
 import { Goal } from '@/types/Event';
@@ -11,38 +11,7 @@ export function useGoals(coupleId: string | null | undefined) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!coupleId) {
-      setLoading(false);
-      return;
-    }
-
-    fetchGoals();
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('goals_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'goals',
-          filter: `couple_id=eq.${coupleId}`,
-        },
-        () => {
-          console.log('Goals changed, refetching...');
-          fetchGoals();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [coupleId]);
-
-  const fetchGoals = async () => {
+  const fetchGoals = useCallback(async () => {
     if (!coupleId) return;
 
     try {
@@ -74,7 +43,38 @@ export function useGoals(coupleId: string | null | undefined) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [coupleId]);
+
+  useEffect(() => {
+    if (!coupleId) {
+      setLoading(false);
+      return;
+    }
+
+    fetchGoals();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('goals_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: `couple_id=eq.${coupleId}`,
+        },
+        () => {
+          console.log('Goals changed, refetching...');
+          fetchGoals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [coupleId, fetchGoals]);
 
   const addGoal = async (goal: Omit<Goal, 'id' | 'progress'>, userId: string) => {
     if (!coupleId) {

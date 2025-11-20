@@ -1,5 +1,7 @@
 
+// eslint-disable-next-line import/no-unresolved
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// eslint-disable-next-line import/no-unresolved
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
