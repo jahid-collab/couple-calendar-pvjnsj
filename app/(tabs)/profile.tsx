@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleEditProfile = () => {
     setFullName(profile?.full_name || "");
@@ -196,6 +198,18 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          "Permission Required",
+          "Please grant permission to access your photo library to upload a profile picture."
+        );
+        return;
+      }
+
+      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: "images",
         allowsEditing: true,
@@ -204,12 +218,82 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        // In a real app, you would upload this to Supabase Storage
-        Alert.alert("Coming Soon", "Profile picture upload will be available soon!");
+        await uploadAvatar(result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error picking image:", error);
       Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
+  const uploadAvatar = async (uri: string) => {
+    if (!user?.id) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      console.log("Starting avatar upload for user:", user.id);
+      
+      // Convert image URI to blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      // Create a unique file name
+      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      console.log("Uploading to:", fileName);
+
+      // Delete old avatar if exists
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath) {
+          const { error: deleteError } = await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+          
+          if (deleteError) {
+            console.error("Error deleting old avatar:", deleteError);
+          }
+        }
+      }
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, blob, {
+          contentType: `image/${fileExt}`,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+
+      console.log("Upload successful:", uploadData);
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      console.log("Public URL:", urlData.publicUrl);
+
+      // Update profile with new avatar URL
+      await updateProfile({
+        avatar_url: urlData.publicUrl,
+      });
+
+      Alert.alert("Success", "Profile picture updated successfully!");
+      await refetch();
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      Alert.alert("Error", error.message || "Failed to upload profile picture");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -237,27 +321,42 @@ export default function ProfileScreen() {
           ]}
           glassEffectStyle="regular"
         >
-          <Pressable onPress={handlePickImage} style={styles.avatarContainer}>
+          <Pressable 
+            onPress={handlePickImage} 
+            style={styles.avatarContainer}
+            disabled={uploadingImage}
+          >
             <View
               style={[
                 styles.avatar,
                 { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
               ]}
             >
-              <IconSymbol
-                ios_icon_name="person.fill"
-                android_material_icon_name="person"
-                size={48}
-                color={colors.primary}
-              />
+              {profile?.avatar_url ? (
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <IconSymbol
+                  ios_icon_name="person.fill"
+                  android_material_icon_name="person"
+                  size={48}
+                  color={colors.primary}
+                />
+              )}
             </View>
             <View style={styles.editBadge}>
-              <IconSymbol
-                ios_icon_name="camera.fill"
-                android_material_icon_name="camera"
-                size={12}
-                color="#FFFFFF"
-              />
+              {uploadingImage ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <IconSymbol
+                  ios_icon_name="camera.fill"
+                  android_material_icon_name="camera"
+                  size={12}
+                  color="#FFFFFF"
+                />
+              )}
             </View>
           </Pressable>
 
@@ -367,12 +466,19 @@ export default function ProfileScreen() {
                   { backgroundColor: theme.dark ? "#333" : "#E0E0E0" },
                 ]}
               >
-                <IconSymbol
-                  ios_icon_name="person.fill"
-                  android_material_icon_name="person"
-                  size={32}
-                  color={colors.secondary}
-                />
+                {partnerProfile.avatar_url ? (
+                  <Image
+                    source={{ uri: partnerProfile.avatar_url }}
+                    style={styles.partnerAvatarImage}
+                  />
+                ) : (
+                  <IconSymbol
+                    ios_icon_name="person.fill"
+                    android_material_icon_name="person"
+                    size={32}
+                    color={colors.secondary}
+                  />
+                )}
               </View>
               <View style={styles.partnerDetails}>
                 <Text style={[styles.partnerName, { color: theme.colors.text }]}>
@@ -625,6 +731,12 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
   },
   editBadge: {
     position: "absolute",
@@ -721,6 +833,12 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  partnerAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   partnerDetails: {
     flex: 1,
