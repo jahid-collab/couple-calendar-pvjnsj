@@ -324,36 +324,57 @@ export default function CalendarScreen() {
   };
 
   const handleEventDateChange = (event: any, date?: Date) => {
+    console.log('handleEventDateChange called', { event, date });
+    
+    // On Android, the picker closes automatically after selection
     if (Platform.OS === 'android') {
       setShowEventDatePicker(false);
     }
     
+    // Update the date if one was selected (not cancelled)
     if (date) {
       const dateString = date.toISOString().split('T')[0];
+      console.log('Setting selectedDate to:', dateString);
       setSelectedDate(dateString);
       setTempDate(date);
+      
+      // On iOS, keep the picker open until user taps Done
+      if (Platform.OS === 'ios') {
+        // Don't close the picker here, let the Done button handle it
+      }
+    } else {
+      // User cancelled on Android
+      if (Platform.OS === 'android') {
+        console.log('Date selection cancelled on Android');
+      }
     }
   };
 
   const handleGoalDateChange = (event: any, date?: Date) => {
+    console.log('handleGoalDateChange called', { event, date });
+    
     if (Platform.OS === 'android') {
       setShowGoalDatePicker(false);
     }
     
     if (date) {
       const dateString = date.toISOString().split('T')[0];
+      console.log('Setting goal targetDate to:', dateString);
       setNewGoal({ ...newGoal, targetDate: dateString });
       setTempDate(date);
     }
   };
 
   const handleReminderDateChange = (event: any, date?: Date) => {
+    console.log('handleReminderDateChange called', { event, date });
+    
     if (Platform.OS === 'android') {
       setShowReminderDatePicker(false);
     }
     
     if (date) {
       const dateString = date.toISOString().split('T')[0];
+      console.log('Setting reminder dueDate to:', dateString);
       setNewReminder({ ...newReminder, dueDate: dateString });
       setTempDate(date);
     }
@@ -904,208 +925,235 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             </View>
 
-            {addItemType === 'event' && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Event title"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newEvent.title}
-                  onChangeText={(text) => {
-                    console.log('Title changed:', text);
-                    setNewEvent({ ...newEvent, title: text });
-                  }}
-                />
-
-                <View style={styles.typeSelector}>
-                  {(['date', 'vacation', 'trip', 'event'] as const).map((type, index) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        styles.typeButton,
-                        newEvent.type === type && styles.typeButtonActive,
-                        newEvent.type === type && { backgroundColor: getEventIconColor(type) }
-                      ]}
-                      onPress={() => {
-                        console.log('Type selected:', type);
-                        setNewEvent({ ...newEvent, type });
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.typeButtonText,
-                        newEvent.type === type && styles.typeButtonTextActive
-                      ]}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.datePickerButton}
-                  onPress={() => {
-                    setTempDate(selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
-                    setShowEventDatePicker(true);
-                  }}
-                >
-                  <IconSymbol name="calendar" color={colors.primary} size={20} />
-                  <Text style={styles.datePickerButtonText}>
-                    {formatDisplayDate(selectedDate)}
-                  </Text>
-                </TouchableOpacity>
-
-                {showEventDatePicker && (
-                  <DateTimePicker
-                    value={tempDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleEventDateChange}
-                    minimumDate={new Date()}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {addItemType === 'event' && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Event title"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newEvent.title}
+                    onChangeText={(text) => {
+                      console.log('Title changed:', text);
+                      setNewEvent({ ...newEvent, title: text });
+                    }}
                   />
-                )}
 
-                {Platform.OS === 'ios' && showEventDatePicker && (
+                  <View style={styles.typeSelector}>
+                    {(['date', 'vacation', 'trip', 'event'] as const).map((type, index) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.typeButton,
+                          newEvent.type === type && styles.typeButtonActive,
+                          newEvent.type === type && { backgroundColor: getEventIconColor(type) }
+                        ]}
+                        onPress={() => {
+                          console.log('Type selected:', type);
+                          setNewEvent({ ...newEvent, type });
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.typeButtonText,
+                          newEvent.type === type && styles.typeButtonTextActive
+                        ]}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
                   <TouchableOpacity
-                    style={styles.datePickerDoneButton}
-                    onPress={() => setShowEventDatePicker(false)}
+                    style={styles.datePickerButton}
+                    onPress={() => {
+                      console.log('Date picker button pressed for event');
+                      const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
+                      setTempDate(initialDate);
+                      setShowEventDatePicker(true);
+                    }}
                   >
-                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                    <IconSymbol name="calendar" color={colors.primary} size={20} />
+                    <Text style={styles.datePickerButtonText}>
+                      {formatDisplayDate(selectedDate)}
+                    </Text>
                   </TouchableOpacity>
-                )}
 
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Description (optional)"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newEvent.description}
-                  onChangeText={(text) => {
-                    console.log('Description changed:', text);
-                    setNewEvent({ ...newEvent, description: text });
-                  }}
-                  multiline
-                  numberOfLines={3}
-                />
-              </>
-            )}
+                  {showEventDatePicker && (
+                    <View style={styles.datePickerContainer}>
+                      <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleEventDateChange}
+                        minimumDate={new Date()}
+                        textColor={colors.text}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.datePickerDoneButton}
+                          onPress={() => {
+                            console.log('Done button pressed, closing event date picker');
+                            setShowEventDatePicker(false);
+                          }}
+                        >
+                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
 
-            {addItemType === 'goal' && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Goal title"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newGoal.title}
-                  onChangeText={(text) => setNewGoal({ ...newGoal, title: text })}
-                />
-
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Description"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newGoal.description}
-                  onChangeText={(text) => setNewGoal({ ...newGoal, description: text })}
-                  multiline
-                  numberOfLines={3}
-                />
-
-                <TouchableOpacity
-                  style={styles.datePickerButton}
-                  onPress={() => {
-                    setTempDate(newGoal.targetDate ? new Date(newGoal.targetDate + 'T00:00:00') : new Date());
-                    setShowGoalDatePicker(true);
-                  }}
-                >
-                  <IconSymbol name="calendar" color={colors.primary} size={20} />
-                  <Text style={styles.datePickerButtonText}>
-                    {formatDisplayDate(newGoal.targetDate || selectedDate)}
-                  </Text>
-                </TouchableOpacity>
-
-                {showGoalDatePicker && (
-                  <DateTimePicker
-                    value={tempDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleGoalDateChange}
-                    minimumDate={new Date()}
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Description (optional)"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newEvent.description}
+                    onChangeText={(text) => {
+                      console.log('Description changed:', text);
+                      setNewEvent({ ...newEvent, description: text });
+                    }}
+                    multiline
+                    numberOfLines={3}
                   />
-                )}
-
-                {Platform.OS === 'ios' && showGoalDatePicker && (
-                  <TouchableOpacity
-                    style={styles.datePickerDoneButton}
-                    onPress={() => setShowGoalDatePicker(false)}
-                  >
-                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-
-            {addItemType === 'reminder' && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="What do you need to remember?"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newReminder.title}
-                  onChangeText={(text) => {
-                    console.log('Title changed:', text);
-                    setNewReminder({ ...newReminder, title: text });
-                  }}
-                />
-
-                <TouchableOpacity
-                  style={styles.datePickerButton}
-                  onPress={() => {
-                    setTempDate(newReminder.dueDate ? new Date(newReminder.dueDate + 'T00:00:00') : new Date());
-                    setShowReminderDatePicker(true);
-                  }}
-                >
-                  <IconSymbol name="calendar" color={colors.primary} size={20} />
-                  <Text style={styles.datePickerButtonText}>
-                    {formatDisplayDate(newReminder.dueDate || selectedDate)}
-                  </Text>
-                </TouchableOpacity>
-
-                {showReminderDatePicker && (
-                  <DateTimePicker
-                    value={tempDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleReminderDateChange}
-                    minimumDate={new Date()}
-                  />
-                )}
-
-                {Platform.OS === 'ios' && showReminderDatePicker && (
-                  <TouchableOpacity
-                    style={styles.datePickerDoneButton}
-                    onPress={() => setShowReminderDatePicker(false)}
-                  >
-                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-
-            <TouchableOpacity 
-              style={[styles.submitButton, saving && styles.buttonDisabled]} 
-              onPress={handleSubmit}
-              disabled={saving}
-              activeOpacity={0.8}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {addItemType === 'event' && 'Add Event'}
-                  {addItemType === 'goal' && 'Add Goal'}
-                  {addItemType === 'reminder' && 'Add Reminder'}
-                </Text>
+                </>
               )}
-            </TouchableOpacity>
+
+              {addItemType === 'goal' && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Goal title"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newGoal.title}
+                    onChangeText={(text) => setNewGoal({ ...newGoal, title: text })}
+                  />
+
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Description"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newGoal.description}
+                    onChangeText={(text) => setNewGoal({ ...newGoal, description: text })}
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.datePickerButton}
+                    onPress={() => {
+                      console.log('Date picker button pressed for goal');
+                      const initialDate = newGoal.targetDate 
+                        ? new Date(newGoal.targetDate + 'T00:00:00') 
+                        : (selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
+                      setTempDate(initialDate);
+                      setShowGoalDatePicker(true);
+                    }}
+                  >
+                    <IconSymbol name="calendar" color={colors.primary} size={20} />
+                    <Text style={styles.datePickerButtonText}>
+                      {formatDisplayDate(newGoal.targetDate || selectedDate)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showGoalDatePicker && (
+                    <View style={styles.datePickerContainer}>
+                      <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleGoalDateChange}
+                        minimumDate={new Date()}
+                        textColor={colors.text}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.datePickerDoneButton}
+                          onPress={() => {
+                            console.log('Done button pressed, closing goal date picker');
+                            setShowGoalDatePicker(false);
+                          }}
+                        >
+                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
+
+              {addItemType === 'reminder' && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="What do you need to remember?"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newReminder.title}
+                    onChangeText={(text) => {
+                      console.log('Title changed:', text);
+                      setNewReminder({ ...newReminder, title: text });
+                    }}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.datePickerButton}
+                    onPress={() => {
+                      console.log('Date picker button pressed for reminder');
+                      const initialDate = newReminder.dueDate 
+                        ? new Date(newReminder.dueDate + 'T00:00:00') 
+                        : (selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
+                      setTempDate(initialDate);
+                      setShowReminderDatePicker(true);
+                    }}
+                  >
+                    <IconSymbol name="calendar" color={colors.primary} size={20} />
+                    <Text style={styles.datePickerButtonText}>
+                      {formatDisplayDate(newReminder.dueDate || selectedDate)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showReminderDatePicker && (
+                    <View style={styles.datePickerContainer}>
+                      <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleReminderDateChange}
+                        minimumDate={new Date()}
+                        textColor={colors.text}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.datePickerDoneButton}
+                          onPress={() => {
+                            console.log('Done button pressed, closing reminder date picker');
+                            setShowReminderDatePicker(false);
+                          }}
+                        >
+                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <TouchableOpacity 
+                style={[styles.submitButton, saving && styles.buttonDisabled]} 
+                onPress={handleSubmit}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {addItemType === 'event' && 'Add Event'}
+                    {addItemType === 'goal' && 'Add Goal'}
+                    {addItemType === 'reminder' && 'Add Reminder'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1299,7 +1347,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
-    minHeight: 400,
+    maxHeight: '85%',
   },
   typeSelectionModal: {
     backgroundColor: colors.card,
@@ -1497,12 +1545,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
+  datePickerContainer: {
+    marginBottom: 16,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   datePickerDoneButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.lavender,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
-    marginBottom: 16,
+    marginTop: 12,
   },
   datePickerDoneButtonText: {
     fontSize: 16,
