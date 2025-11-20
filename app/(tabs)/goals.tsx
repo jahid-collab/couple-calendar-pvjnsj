@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -20,6 +21,9 @@ import Svg, { Circle, G } from 'react-native-svg';
 import { useAuth } from '@/hooks/useAuth';
 import { useCouple } from '@/hooks/useCouple';
 import { useGoals } from '@/hooks/useGoals';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isSmallScreen = SCREEN_WIDTH < 375;
 
 export default function GoalsScreen() {
   const { user } = useAuth();
@@ -200,7 +204,11 @@ export default function GoalsScreen() {
           <View style={styles.headerSection}>
             <Text style={styles.headerTitle}>Our Journey Together</Text>
             <View style={styles.overallProgressCard}>
-              <ProgressCircle progress={overallProgress} size={140} color={colors.primary} />
+              <ProgressCircle 
+                progress={overallProgress} 
+                size={isSmallScreen ? 120 : 140} 
+                color={colors.primary} 
+              />
               <View style={styles.overallProgressInfo}>
                 <Text style={styles.overallProgressLabel}>Overall Progress</Text>
                 <Text style={styles.overallProgressText}>{overallProgress}%</Text>
@@ -338,15 +346,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 20,
+    paddingTop: Platform.OS === 'android' ? 60 : 0,
   },
   scrollContentWithTabBar: {
     paddingBottom: 160,
   },
   headerSection: {
     padding: 16,
+    paddingTop: Platform.OS === 'android' ? 8 : 16,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: isSmallScreen ? 22 : 28,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 20,
@@ -355,7 +365,7 @@ const styles = StyleSheet.create({
   overallProgressCard: {
     backgroundColor: colors.card,
     borderRadius: 20,
-    padding: 24,
+    padding: isSmallScreen ? 20 : 28,
     alignItems: 'center',
     ...Platform.select({
       ios: {
@@ -383,7 +393,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressText: {
-    fontSize: 32,
+    fontSize: isSmallScreen ? 28 : 32,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -391,18 +401,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overallProgressLabel: {
-    fontSize: 16,
+    fontSize: isSmallScreen ? 14 : 16,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   overallProgressText: {
-    fontSize: 36,
+    fontSize: isSmallScreen ? 32 : 36,
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 8,
   },
   goalsCount: {
-    fontSize: 14,
+    fontSize: isSmallScreen ? 12 : 14,
     color: colors.textSecondary,
   },
   goalsSection: {
@@ -410,7 +420,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: isSmallScreen ? 18 : 22,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
@@ -447,20 +457,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   goalEmoji: {
-    fontSize: 40,
+    fontSize: isSmallScreen ? 32 : 40,
     marginRight: 12,
   },
   goalInfo: {
     flex: 1,
   },
   goalTitle: {
-    fontSize: 18,
+    fontSize: isSmallScreen ? 16 : 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 6,
   },
   goalDescription: {
-    fontSize: 14,
+    fontSize: isSmallScreen ? 13 : 14,
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 4,

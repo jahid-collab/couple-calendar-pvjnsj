@@ -12,6 +12,7 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -19,6 +20,9 @@ import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/hooks/useAuth';
 import { useCouple } from '@/hooks/useCouple';
 import { useReminders } from '@/hooks/useReminders';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isSmallScreen = SCREEN_WIDTH < 375;
 
 export default function RemindersScreen() {
   const { user } = useAuth();
@@ -391,6 +395,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingTop: Platform.OS === 'android' ? 60 : 16,
     paddingBottom: 20,
   },
   scrollContentWithTabBar: {
@@ -398,11 +403,12 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: isSmallScreen ? 16 : 24,
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 24,
+    minHeight: 100,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -417,33 +423,37 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   statNumber: {
-    fontSize: 32,
+    fontSize: isSmallScreen ? 28 : 36,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: isSmallScreen ? 12 : 14,
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   statDivider: {
     width: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.border,
+    marginVertical: 12,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: isSmallScreen ? 18 : 22,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
   },
   reminderCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
@@ -480,7 +490,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   reminderTitle: {
-    fontSize: 16,
+    fontSize: isSmallScreen ? 14 : 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
