@@ -65,6 +65,11 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Processing invitation from ${user.email} to ${inviteeEmail}`);
+    console.log('RESEND_API_KEY configured:', !!RESEND_API_KEY);
+    if (RESEND_API_KEY) {
+      console.log('RESEND_API_KEY length:', RESEND_API_KEY.length);
+      console.log('RESEND_API_KEY starts with:', RESEND_API_KEY.substring(0, 7));
+    }
 
     // Check if invitation already exists
     const { data: existingInvitation } = await supabaseAdmin
@@ -234,9 +239,15 @@ Deno.serve(async (req) => {
 
     // Send email using Resend if API key is available
     let emailSent = false;
+    let emailError: any = null;
+    let resendResponseData: any = null;
+
     if (RESEND_API_KEY) {
       try {
         console.log('Attempting to send email via Resend...');
+        console.log('Sending to:', inviteeEmail);
+        console.log('From name:', inviterName);
+        
         const resendResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -251,19 +262,29 @@ Deno.serve(async (req) => {
           }),
         });
 
-        const resendData = await resendResponse.json();
+        resendResponseData = await resendResponse.json();
+        console.log('Resend API response status:', resendResponse.status);
+        console.log('Resend API response:', JSON.stringify(resendResponseData));
 
         if (resendResponse.ok) {
           emailSent = true;
-          console.log('Email sent successfully via Resend:', resendData);
+          console.log('✅ Email sent successfully via Resend!');
+          console.log('Email ID:', resendResponseData.id);
         } else {
-          console.error('Failed to send email via Resend:', resendData);
+          emailError = resendResponseData;
+          console.error('❌ Failed to send email via Resend');
+          console.error('Error details:', JSON.stringify(resendResponseData));
         }
-      } catch (emailError) {
-        console.error('Error sending email via Resend:', emailError);
+      } catch (error) {
+        emailError = error;
+        console.error('❌ Exception while sending email via Resend:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
       }
     } else {
-      console.log('RESEND_API_KEY not configured - email will not be sent');
+      console.log('⚠️ RESEND_API_KEY not configured - email will not be sent');
     }
 
     // If email was not sent, log the invitation details
@@ -274,7 +295,10 @@ Deno.serve(async (req) => {
       console.log('Inviter Name:', inviterName);
       console.log('Link:', invitationLink);
       console.log('Token:', invitationToken);
-      console.log('Note: Configure RESEND_API_KEY environment variable to enable email sending');
+      if (emailError) {
+        console.log('Email Error:', JSON.stringify(emailError));
+      }
+      console.log('Note: Share this link with your partner manually');
       console.log('========================');
     }
 
@@ -287,6 +311,8 @@ Deno.serve(async (req) => {
         invitationLink,
         invitationToken,
         emailSent,
+        emailError: emailError ? (typeof emailError === 'object' ? emailError : String(emailError)) : null,
+        resendResponse: resendResponseData,
       }),
       {
         status: 200,

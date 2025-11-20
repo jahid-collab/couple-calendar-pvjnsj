@@ -19,6 +19,8 @@ export interface SendInvitationResult {
   invitationLink: string;
   invitationToken: string;
   emailSent: boolean;
+  emailError?: any;
+  resendResponse?: any;
 }
 
 export function useInvitations() {
@@ -38,6 +40,8 @@ export function useInvitations() {
       const supabaseUrl = supabase.supabaseUrl;
       const functionUrl = `${supabaseUrl}/functions/v1/send-partner-invitation`;
 
+      console.log('Calling Edge Function:', functionUrl);
+
       // Call the Edge Function
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -52,6 +56,7 @@ export function useInvitations() {
       });
 
       const data = await response.json();
+      console.log('Edge Function response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send invitation');

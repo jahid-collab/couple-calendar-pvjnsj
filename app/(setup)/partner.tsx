@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Share,
+  Clipboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
@@ -24,8 +25,10 @@ export default function PartnerSetupScreen() {
   const { profile, updateProfile, createCouple } = useCouple(user?.id);
   const { sendInvitation, loading: invitationLoading } = useInvitations();
   const [partnerEmail, setPartnerEmail] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState('');
   const [invitationSent, setInvitationSent] = useState(false);
+  const [invitationLink, setInvitationLink] = useState('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const handleSkip = () => {
     router.replace('/(tabs)/(home)');
@@ -72,16 +75,32 @@ export default function PartnerSetupScreen() {
       const inviterName = profile?.full_name || user?.email || 'Someone';
       const result = await sendInvitation(partnerEmail, inviterName);
 
+      console.log('Invitation result:', result);
+      setDebugInfo(result);
+
       if (result.success) {
         setInvitationSent(true);
+        setInvitationLink(result.invitationLink);
         
-        // Show success message
-        const message = result.emailSent
-          ? `Invitation sent to ${partnerEmail}! 📧\n\nThey will receive an email with a link to join. You can also share the invitation link directly.`
-          : `Invitation created! 📧\n\nShare the invitation link with ${partnerEmail} so they can join.`;
+        // Show detailed success message
+        let message = '';
+        if (result.emailSent) {
+          message = `✅ Invitation email sent to ${partnerEmail}!\n\n📧 Your partner should receive the email shortly. Please ask them to check their inbox and spam folder.\n\n💡 You can also share the invitation link directly.`;
+        } else {
+          message = `⚠️ Invitation created but email could not be sent.\n\n`;
+          
+          if (result.emailError) {
+            const errorMsg = typeof result.emailError === 'object' 
+              ? JSON.stringify(result.emailError) 
+              : String(result.emailError);
+            message += `Error: ${errorMsg}\n\n`;
+          }
+          
+          message += `Please share the invitation link with ${partnerEmail} manually.`;
+        }
 
         Alert.alert(
-          'Invitation Sent! ✅',
+          result.emailSent ? 'Invitation Sent! ✅' : 'Action Required ⚠️',
           message,
           [
             {
@@ -104,10 +123,10 @@ export default function PartnerSetupScreen() {
     }
   };
 
-  const handleShareInvitation = async (invitationLink: string) => {
+  const handleShareInvitation = async (link: string) => {
     try {
       await Share.share({
-        message: `Join me on our Couple's Calendar app! 💕\n\nAccept my invitation here: ${invitationLink}`,
+        message: `Join me on our Couple's Calendar app! 💕\n\nAccept my invitation here: ${link}`,
         title: 'Join Our Couple\'s Calendar',
       });
       
@@ -122,6 +141,13 @@ export default function PartnerSetupScreen() {
     }
   };
 
+  const handleCopyLink = () => {
+    if (invitationLink) {
+      Clipboard.setString(invitationLink);
+      Alert.alert('Copied!', 'Invitation link copied to clipboard');
+    }
+  };
+
   // If invitation was sent, show success state
   if (invitationSent) {
     return (
@@ -131,13 +157,53 @@ export default function PartnerSetupScreen() {
       >
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={80} color="#4CAF50" />
+            <IconSymbol 
+              ios_icon_name={debugInfo?.emailSent ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"} 
+              android_material_icon_name={debugInfo?.emailSent ? "check_circle" : "warning"} 
+              size={80} 
+              color={debugInfo?.emailSent ? "#4CAF50" : "#FF9800"} 
+            />
           </View>
-          <Text style={styles.title}>Invitation Sent! ✅</Text>
+          <Text style={styles.title}>
+            {debugInfo?.emailSent ? 'Invitation Sent! ✅' : 'Invitation Created ⚠️'}
+          </Text>
           <Text style={styles.subtitle}>
-            Your partner will receive an invitation to join
+            {debugInfo?.emailSent 
+              ? 'Your partner will receive an invitation email' 
+              : 'Please share the link with your partner manually'}
           </Text>
         </View>
+
+        {debugInfo?.emailSent ? (
+          <View style={styles.infoBox}>
+            <IconSymbol ios_icon_name="envelope.fill" android_material_icon_name="email" size={24} color="#4CAF50" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoText}>
+                ✅ Email sent to {partnerEmail}
+              </Text>
+              <Text style={[styles.infoText, styles.infoTextSpacing]}>
+                Please ask your partner to check their inbox and spam folder.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.infoBox, { backgroundColor: '#FFF3E0' }]}>
+            <IconSymbol ios_icon_name="exclamationmark.triangle.fill" android_material_icon_name="warning" size={24} color="#FF9800" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoText}>
+                ⚠️ Email could not be sent
+              </Text>
+              {debugInfo?.emailError && (
+                <Text style={[styles.infoText, styles.infoTextSpacing, { fontSize: 12, fontFamily: 'monospace' }]}>
+                  Error: {JSON.stringify(debugInfo.emailError, null, 2)}
+                </Text>
+              )}
+              <Text style={[styles.infoText, styles.infoTextSpacing]}>
+                Please share the invitation link manually with {partnerEmail}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.infoBox}>
           <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={24} color={colors.secondary} />
@@ -151,12 +217,48 @@ export default function PartnerSetupScreen() {
           </View>
         </View>
 
+        {invitationLink && (
+          <React.Fragment>
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.secondary }]}
+              onPress={() => handleShareInvitation(invitationLink)}
+            >
+              <IconSymbol ios_icon_name="square.and.arrow.up" android_material_icon_name="share" size={20} color="#FFFFFF" />
+              <Text style={[styles.buttonText, { marginLeft: 8 }]}>Share Invitation Link</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.textSecondary }]}
+              onPress={handleCopyLink}
+            >
+              <IconSymbol ios_icon_name="doc.on.doc" android_material_icon_name="content_copy" size={20} color="#FFFFFF" />
+              <Text style={[styles.buttonText, { marginLeft: 8 }]}>Copy Link</Text>
+            </Pressable>
+          </React.Fragment>
+        )}
+
         <Pressable
           style={styles.button}
           onPress={() => router.replace('/(tabs)/(home)')}
         >
           <Text style={styles.buttonText}>Continue to App</Text>
         </Pressable>
+
+        {/* Debug info section */}
+        {debugInfo && (
+          <View style={[styles.debugBox]}>
+            <Text style={styles.debugTitle}>Debug Information:</Text>
+            <Text style={styles.debugText}>Email Sent: {debugInfo.emailSent ? 'Yes ✅' : 'No ❌'}</Text>
+            {debugInfo.resendResponse && (
+              <Text style={styles.debugText}>
+                Resend Response: {JSON.stringify(debugInfo.resendResponse, null, 2)}
+              </Text>
+            )}
+            <Text style={styles.debugText}>
+              Invitation Link: {invitationLink}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     );
   }
@@ -285,6 +387,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     boxShadow: '0px 4px 12px rgba(233, 30, 99, 0.3)',
     elevation: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -310,6 +414,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     alignItems: 'flex-start',
+    marginBottom: 16,
   },
   infoTextContainer: {
     flex: 1,
@@ -321,5 +426,25 @@ const styles = StyleSheet.create({
   },
   infoTextSpacing: {
     marginTop: 8,
+  },
+  debugBox: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontFamily: 'monospace',
+    marginBottom: 4,
   },
 });
