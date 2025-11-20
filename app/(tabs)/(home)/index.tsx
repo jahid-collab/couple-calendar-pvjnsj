@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, DateData } from 'react-native-calendars';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
@@ -40,6 +41,13 @@ export default function CalendarScreen() {
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
   const [addItemType, setAddItemType] = useState<AddItemType>('event');
   const [saving, setSaving] = useState(false);
+  
+  // Date picker states
+  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
+  const [showGoalDatePicker, setShowGoalDatePicker] = useState(false);
+  const [showReminderDatePicker, setShowReminderDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+  
   const [newEvent, setNewEvent] = useState({
     title: '',
     type: 'date' as Event['type'],
@@ -315,6 +323,52 @@ export default function CalendarScreen() {
     setShowAddModal(true);
   };
 
+  const handleEventDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowEventDatePicker(false);
+    }
+    
+    if (date) {
+      const dateString = date.toISOString().split('T')[0];
+      setSelectedDate(dateString);
+      setTempDate(date);
+    }
+  };
+
+  const handleGoalDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowGoalDatePicker(false);
+    }
+    
+    if (date) {
+      const dateString = date.toISOString().split('T')[0];
+      setNewGoal({ ...newGoal, targetDate: dateString });
+      setTempDate(date);
+    }
+  };
+
+  const handleReminderDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowReminderDatePicker(false);
+    }
+    
+    if (date) {
+      const dateString = date.toISOString().split('T')[0];
+      setNewReminder({ ...newReminder, dueDate: dateString });
+      setTempDate(date);
+    }
+  };
+
+  const formatDisplayDate = (dateString: string) => {
+    if (!dateString) return 'Select date';
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric',
+      year: 'numeric' 
+    });
+  };
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'vacation': return '🏖️';
@@ -460,7 +514,7 @@ export default function CalendarScreen() {
                 >
                   <View style={styles.eventTime}>
                     <Text style={styles.eventTimeText}>
-                      {new Date(event.date).toLocaleTimeString('en-US', { 
+                      {new Date(event.date + 'T00:00:00').toLocaleTimeString('en-US', { 
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true 
@@ -477,7 +531,7 @@ export default function CalendarScreen() {
                     <View style={styles.eventDetails}>
                       <Text style={styles.eventTitle}>{event.title}</Text>
                       <Text style={styles.eventSubtitle}>
-                        {event.description || `Today ${new Date(event.date).toLocaleTimeString('en-US', { 
+                        {event.description || `Today ${new Date(event.date + 'T00:00:00').toLocaleTimeString('en-US', { 
                           hour: 'numeric',
                           minute: '2-digit',
                           hour12: true 
@@ -512,7 +566,7 @@ export default function CalendarScreen() {
                 >
                   <View style={styles.eventTime}>
                     <Text style={styles.eventTimeText}>
-                      {goal.targetDate && new Date(goal.targetDate).toLocaleTimeString('en-US', { 
+                      {goal.targetDate && new Date(goal.targetDate + 'T00:00:00').toLocaleTimeString('en-US', { 
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true 
@@ -560,7 +614,7 @@ export default function CalendarScreen() {
                 >
                   <View style={styles.eventTime}>
                     <Text style={styles.eventTimeText}>
-                      {reminder.dueDate && new Date(reminder.dueDate).toLocaleTimeString('en-US', { 
+                      {reminder.dueDate && new Date(reminder.dueDate + 'T00:00:00').toLocaleTimeString('en-US', { 
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true 
@@ -577,7 +631,7 @@ export default function CalendarScreen() {
                     <View style={styles.eventDetails}>
                       <Text style={styles.eventTitle}>{reminder.title}</Text>
                       <Text style={styles.eventSubtitle}>
-                        {reminder.dueDate && `Due ${new Date(reminder.dueDate).toLocaleTimeString('en-US', { 
+                        {reminder.dueDate && `Due ${new Date(reminder.dueDate + 'T00:00:00').toLocaleTimeString('en-US', { 
                           hour: 'numeric',
                           minute: '2-digit',
                           hour12: true 
@@ -687,7 +741,7 @@ export default function CalendarScreen() {
           >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {selectedDate && new Date(selectedDate).toLocaleDateString('en-US', { 
+                {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
                   month: 'long', 
                   day: 'numeric',
                   year: 'numeric' 
@@ -888,6 +942,38 @@ export default function CalendarScreen() {
                   ))}
                 </View>
 
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => {
+                    setTempDate(selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
+                    setShowEventDatePicker(true);
+                  }}
+                >
+                  <IconSymbol name="calendar" color={colors.primary} size={20} />
+                  <Text style={styles.datePickerButtonText}>
+                    {formatDisplayDate(selectedDate)}
+                  </Text>
+                </TouchableOpacity>
+
+                {showEventDatePicker && (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleEventDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+
+                {Platform.OS === 'ios' && showEventDatePicker && (
+                  <TouchableOpacity
+                    style={styles.datePickerDoneButton}
+                    onPress={() => setShowEventDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Description (optional)"
@@ -923,13 +1009,37 @@ export default function CalendarScreen() {
                   numberOfLines={3}
                 />
 
-                <TextInput
-                  style={styles.input}
-                  placeholder={`Target date (${selectedDate || 'YYYY-MM-DD'})`}
-                  placeholderTextColor={colors.textSecondary}
-                  value={newGoal.targetDate}
-                  onChangeText={(text) => setNewGoal({ ...newGoal, targetDate: text })}
-                />
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => {
+                    setTempDate(newGoal.targetDate ? new Date(newGoal.targetDate + 'T00:00:00') : new Date());
+                    setShowGoalDatePicker(true);
+                  }}
+                >
+                  <IconSymbol name="calendar" color={colors.primary} size={20} />
+                  <Text style={styles.datePickerButtonText}>
+                    {formatDisplayDate(newGoal.targetDate || selectedDate)}
+                  </Text>
+                </TouchableOpacity>
+
+                {showGoalDatePicker && (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleGoalDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+
+                {Platform.OS === 'ios' && showGoalDatePicker && (
+                  <TouchableOpacity
+                    style={styles.datePickerDoneButton}
+                    onPress={() => setShowGoalDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
 
@@ -946,16 +1056,37 @@ export default function CalendarScreen() {
                   }}
                 />
 
-                <TextInput
-                  style={styles.input}
-                  placeholder={`Due date (${selectedDate || 'YYYY-MM-DD'})`}
-                  placeholderTextColor={colors.textSecondary}
-                  value={newReminder.dueDate}
-                  onChangeText={(text) => {
-                    console.log('Due date changed:', text);
-                    setNewReminder({ ...newReminder, dueDate: text });
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => {
+                    setTempDate(newReminder.dueDate ? new Date(newReminder.dueDate + 'T00:00:00') : new Date());
+                    setShowReminderDatePicker(true);
                   }}
-                />
+                >
+                  <IconSymbol name="calendar" color={colors.primary} size={20} />
+                  <Text style={styles.datePickerButtonText}>
+                    {formatDisplayDate(newReminder.dueDate || selectedDate)}
+                  </Text>
+                </TouchableOpacity>
+
+                {showReminderDatePicker && (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleReminderDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+
+                {Platform.OS === 'ios' && showReminderDatePicker && (
+                  <TouchableOpacity
+                    style={styles.datePickerDoneButton}
+                    onPress={() => setShowReminderDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneButtonText}>Done</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
 
@@ -1348,6 +1479,34 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   typeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  datePickerButton: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  datePickerButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  datePickerDoneButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  datePickerDoneButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   submitButton: {
