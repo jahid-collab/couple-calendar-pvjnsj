@@ -1035,17 +1035,14 @@ export default function CalendarScreen() {
         transparent={true}
         onRequestClose={() => setShowEventCalendarPicker(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowEventCalendarPicker(false)}
-        >
-          <Pressable 
-            style={styles.calendarPickerModal}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setShowEventCalendarPicker(false)}>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarPickerContainer}>
+            <View style={styles.calendarModalHeader}>
+              <Text style={styles.calendarModalTitle}>Select Date</Text>
+              <TouchableOpacity 
+                onPress={() => setShowEventCalendarPicker(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <IconSymbol name="xmark" color={colors.text} size={24} />
               </TouchableOpacity>
             </View>
@@ -1054,29 +1051,45 @@ export default function CalendarScreen() {
               onDayPress={handleEventCalendarDayPress}
               markedDates={getCalendarMarkedDates(selectedDate)}
               theme={{
-                backgroundColor: 'transparent',
-                calendarBackground: 'transparent',
+                backgroundColor: colors.card,
+                calendarBackground: colors.card,
                 textSectionTitleColor: colors.textSecondary,
                 selectedDayBackgroundColor: colors.primary,
                 selectedDayTextColor: '#FFFFFF',
                 todayTextColor: colors.primary,
                 dayTextColor: colors.text,
                 textDisabledColor: colors.textSecondary + '60',
-                arrowColor: colors.text,
+                arrowColor: colors.primary,
                 monthTextColor: colors.text,
                 textDayFontWeight: '500',
-                textMonthFontWeight: '600',
+                textMonthFontWeight: '700',
                 textDayHeaderFontWeight: '500',
                 textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 13,
+                textMonthFontSize: 20,
+                textDayHeaderFontSize: 14,
               }}
               style={styles.calendarPicker}
               minDate={new Date().toISOString().split('T')[0]}
               enableSwipeMonths={true}
+              hideExtraDays={false}
+              disableMonthChange={false}
+              firstDay={0}
+              hideDayNames={false}
+              showWeekNumbers={false}
+              disableArrowLeft={false}
+              disableArrowRight={false}
+              disableAllTouchEventsForDisabledDays={true}
             />
-          </Pressable>
-        </Pressable>
+
+            <TouchableOpacity
+              style={styles.calendarCloseButton}
+              onPress={() => setShowEventCalendarPicker(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.calendarCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Goal Calendar Picker Modal */}
@@ -1086,17 +1099,14 @@ export default function CalendarScreen() {
         transparent={true}
         onRequestClose={() => setShowGoalCalendarPicker(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowGoalCalendarPicker(false)}
-        >
-          <Pressable 
-            style={styles.calendarPickerModal}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Target Date</Text>
-              <TouchableOpacity onPress={() => setShowGoalCalendarPicker(false)}>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarPickerContainer}>
+            <View style={styles.calendarModalHeader}>
+              <Text style={styles.calendarModalTitle}>Select Target Date</Text>
+              <TouchableOpacity 
+                onPress={() => setShowGoalCalendarPicker(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <IconSymbol name="xmark" color={colors.text} size={24} />
               </TouchableOpacity>
             </View>
@@ -1105,29 +1115,45 @@ export default function CalendarScreen() {
               onDayPress={handleGoalCalendarDayPress}
               markedDates={getCalendarMarkedDates(newGoal.targetDate)}
               theme={{
-                backgroundColor: 'transparent',
-                calendarBackground: 'transparent',
+                backgroundColor: colors.card,
+                calendarBackground: colors.card,
                 textSectionTitleColor: colors.textSecondary,
                 selectedDayBackgroundColor: colors.primary,
                 selectedDayTextColor: '#FFFFFF',
                 todayTextColor: colors.primary,
                 dayTextColor: colors.text,
                 textDisabledColor: colors.textSecondary + '60',
-                arrowColor: colors.text,
+                arrowColor: colors.primary,
                 monthTextColor: colors.text,
                 textDayFontWeight: '500',
-                textMonthFontWeight: '600',
+                textMonthFontWeight: '700',
                 textDayHeaderFontWeight: '500',
                 textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 13,
+                textMonthFontSize: 20,
+                textDayHeaderFontSize: 14,
               }}
               style={styles.calendarPicker}
               minDate={new Date().toISOString().split('T')[0]}
               enableSwipeMonths={true}
+              hideExtraDays={false}
+              disableMonthChange={false}
+              firstDay={0}
+              hideDayNames={false}
+              showWeekNumbers={false}
+              disableArrowLeft={false}
+              disableArrowRight={false}
+              disableAllTouchEventsForDisabledDays={true}
             />
-          </Pressable>
-        </Pressable>
+
+            <TouchableOpacity
+              style={styles.calendarCloseButton}
+              onPress={() => setShowGoalCalendarPicker(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.calendarCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Reminder Calendar Picker Modal */}
@@ -1137,17 +1163,14 @@ export default function CalendarScreen() {
         transparent={true}
         onRequestClose={() => setShowReminderCalendarPicker(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowReminderCalendarPicker(false)}
-        >
-          <Pressable 
-            style={styles.calendarPickerModal}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Due Date</Text>
-              <TouchableOpacity onPress={() => setShowReminderCalendarPicker(false)}>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarPickerContainer}>
+            <View style={styles.calendarModalHeader}>
+              <Text style={styles.calendarModalTitle}>Select Due Date</Text>
+              <TouchableOpacity 
+                onPress={() => setShowReminderCalendarPicker(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <IconSymbol name="xmark" color={colors.text} size={24} />
               </TouchableOpacity>
             </View>
@@ -1156,29 +1179,45 @@ export default function CalendarScreen() {
               onDayPress={handleReminderCalendarDayPress}
               markedDates={getCalendarMarkedDates(newReminder.dueDate)}
               theme={{
-                backgroundColor: 'transparent',
-                calendarBackground: 'transparent',
+                backgroundColor: colors.card,
+                calendarBackground: colors.card,
                 textSectionTitleColor: colors.textSecondary,
                 selectedDayBackgroundColor: colors.primary,
                 selectedDayTextColor: '#FFFFFF',
                 todayTextColor: colors.primary,
                 dayTextColor: colors.text,
                 textDisabledColor: colors.textSecondary + '60',
-                arrowColor: colors.text,
+                arrowColor: colors.primary,
                 monthTextColor: colors.text,
                 textDayFontWeight: '500',
-                textMonthFontWeight: '600',
+                textMonthFontWeight: '700',
                 textDayHeaderFontWeight: '500',
                 textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 13,
+                textMonthFontSize: 20,
+                textDayHeaderFontSize: 14,
               }}
               style={styles.calendarPicker}
               minDate={new Date().toISOString().split('T')[0]}
               enableSwipeMonths={true}
+              hideExtraDays={false}
+              disableMonthChange={false}
+              firstDay={0}
+              hideDayNames={false}
+              showWeekNumbers={false}
+              disableArrowLeft={false}
+              disableArrowRight={false}
+              disableAllTouchEventsForDisabledDays={true}
             />
-          </Pressable>
-        </Pressable>
+
+            <TouchableOpacity
+              style={styles.calendarCloseButton}
+              onPress={() => setShowReminderCalendarPicker(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.calendarCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </>
   );
@@ -1352,13 +1391,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     padding: 24,
     maxHeight: '80%',
-  },
-  calendarPickerModal: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '70%',
   },
   dateDetailsContent: {
     maxHeight: 500,
@@ -1542,8 +1574,59 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  calendarPickerContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  calendarModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  calendarModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+  },
   calendarPicker: {
-    borderRadius: 0,
+    borderRadius: 16,
+    paddingBottom: 10,
+  },
+  calendarCloseButton: {
+    backgroundColor: colors.lavender,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  calendarCloseButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   submitButton: {
     backgroundColor: colors.lavender,
