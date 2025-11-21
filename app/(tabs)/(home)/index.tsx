@@ -448,30 +448,6 @@ export default function CalendarScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header with Month and Icons */}
-          {Platform.OS !== 'ios' && (
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.closeButton}>
-                <IconSymbol name="xmark" color={colors.text} size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.monthTitleButton}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.monthTitle}>November</Text>
-                <IconSymbol name="chevron.down" color={colors.text} size={16} />
-              </TouchableOpacity>
-              <View style={styles.headerIcons}>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <IconSymbol name="calendar" color={colors.text} size={22} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <IconSymbol name="bell" color={colors.text} size={22} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
           {/* Title */}
           <View style={styles.titleContainer}>
             <Text style={styles.pageTitle}>Schedule in your</Text>
@@ -1189,51 +1165,9 @@ const styles = StyleSheet.create({
   scrollContentWithTabBar: {
     paddingBottom: 100,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 48,
-    paddingBottom: 16,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  monthTitleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: colors.card,
-  },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  headerIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   titleContainer: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 16 : 8,
+    paddingTop: Platform.OS === 'ios' ? 16 : 48,
     paddingBottom: 24,
   },
   pageTitle: {
