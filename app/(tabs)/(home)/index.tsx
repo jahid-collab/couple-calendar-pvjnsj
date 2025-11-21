@@ -14,7 +14,6 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, DateData } from 'react-native-calendars';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
@@ -42,11 +41,10 @@ export default function CalendarScreen() {
   const [addItemType, setAddItemType] = useState<AddItemType>('event');
   const [saving, setSaving] = useState(false);
   
-  // Date picker states
-  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
-  const [showGoalDatePicker, setShowGoalDatePicker] = useState(false);
-  const [showReminderDatePicker, setShowReminderDatePicker] = useState(false);
-  const [tempDate, setTempDate] = useState(new Date());
+  // Calendar picker states
+  const [showEventCalendarPicker, setShowEventCalendarPicker] = useState(false);
+  const [showGoalCalendarPicker, setShowGoalCalendarPicker] = useState(false);
+  const [showReminderCalendarPicker, setShowReminderCalendarPicker] = useState(false);
   
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -323,61 +321,22 @@ export default function CalendarScreen() {
     setShowAddModal(true);
   };
 
-  const handleEventDateChange = (event: any, date?: Date) => {
-    console.log('handleEventDateChange called', { event, date });
-    
-    // On Android, the picker closes automatically after selection
-    if (Platform.OS === 'android') {
-      setShowEventDatePicker(false);
-    }
-    
-    // Update the date if one was selected (not cancelled)
-    if (date) {
-      const dateString = date.toISOString().split('T')[0];
-      console.log('Setting selectedDate to:', dateString);
-      setSelectedDate(dateString);
-      setTempDate(date);
-      
-      // On iOS, keep the picker open until user taps Done
-      if (Platform.OS === 'ios') {
-        // Don't close the picker here, let the Done button handle it
-      }
-    } else {
-      // User cancelled on Android
-      if (Platform.OS === 'android') {
-        console.log('Date selection cancelled on Android');
-      }
-    }
+  const handleEventCalendarDayPress = (day: DateData) => {
+    console.log('Event calendar day pressed:', day.dateString);
+    setSelectedDate(day.dateString);
+    setShowEventCalendarPicker(false);
   };
 
-  const handleGoalDateChange = (event: any, date?: Date) => {
-    console.log('handleGoalDateChange called', { event, date });
-    
-    if (Platform.OS === 'android') {
-      setShowGoalDatePicker(false);
-    }
-    
-    if (date) {
-      const dateString = date.toISOString().split('T')[0];
-      console.log('Setting goal targetDate to:', dateString);
-      setNewGoal({ ...newGoal, targetDate: dateString });
-      setTempDate(date);
-    }
+  const handleGoalCalendarDayPress = (day: DateData) => {
+    console.log('Goal calendar day pressed:', day.dateString);
+    setNewGoal({ ...newGoal, targetDate: day.dateString });
+    setShowGoalCalendarPicker(false);
   };
 
-  const handleReminderDateChange = (event: any, date?: Date) => {
-    console.log('handleReminderDateChange called', { event, date });
-    
-    if (Platform.OS === 'android') {
-      setShowReminderDatePicker(false);
-    }
-    
-    if (date) {
-      const dateString = date.toISOString().split('T')[0];
-      console.log('Setting reminder dueDate to:', dateString);
-      setNewReminder({ ...newReminder, dueDate: dateString });
-      setTempDate(date);
-    }
+  const handleReminderCalendarDayPress = (day: DateData) => {
+    console.log('Reminder calendar day pressed:', day.dateString);
+    setNewReminder({ ...newReminder, dueDate: day.dateString });
+    setShowReminderCalendarPicker(false);
   };
 
   const formatDisplayDate = (dateString: string) => {
@@ -418,6 +377,17 @@ export default function CalendarScreen() {
       case 'event': return colors.pink;
       default: return colors.peach;
     }
+  };
+
+  const getCalendarMarkedDates = (currentDate: string) => {
+    const marked: any = {};
+    if (currentDate) {
+      marked[currentDate] = {
+        selected: true,
+        selectedColor: colors.primary,
+      };
+    }
+    return marked;
   };
 
   if (loading) {
@@ -950,9 +920,7 @@ export default function CalendarScreen() {
                     style={styles.datePickerButton}
                     onPress={() => {
                       console.log('Date picker button pressed for event');
-                      const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
-                      setTempDate(initialDate);
-                      setShowEventDatePicker(true);
+                      setShowEventCalendarPicker(true);
                     }}
                   >
                     <IconSymbol name="calendar" color={colors.primary} size={20} />
@@ -960,30 +928,6 @@ export default function CalendarScreen() {
                       {formatDisplayDate(selectedDate)}
                     </Text>
                   </TouchableOpacity>
-
-                  {showEventDatePicker && (
-                    <View style={styles.datePickerContainer}>
-                      <DateTimePicker
-                        value={tempDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={handleEventDateChange}
-                        minimumDate={new Date()}
-                        textColor={colors.text}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={styles.datePickerDoneButton}
-                          onPress={() => {
-                            console.log('Done button pressed, closing event date picker');
-                            setShowEventDatePicker(false);
-                          }}
-                        >
-                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
 
                   <TextInput
                     style={[styles.input, styles.textArea]}
@@ -1024,11 +968,7 @@ export default function CalendarScreen() {
                     style={styles.datePickerButton}
                     onPress={() => {
                       console.log('Date picker button pressed for goal');
-                      const initialDate = newGoal.targetDate 
-                        ? new Date(newGoal.targetDate + 'T00:00:00') 
-                        : (selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
-                      setTempDate(initialDate);
-                      setShowGoalDatePicker(true);
+                      setShowGoalCalendarPicker(true);
                     }}
                   >
                     <IconSymbol name="calendar" color={colors.primary} size={20} />
@@ -1036,30 +976,6 @@ export default function CalendarScreen() {
                       {formatDisplayDate(newGoal.targetDate || selectedDate)}
                     </Text>
                   </TouchableOpacity>
-
-                  {showGoalDatePicker && (
-                    <View style={styles.datePickerContainer}>
-                      <DateTimePicker
-                        value={tempDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={handleGoalDateChange}
-                        minimumDate={new Date()}
-                        textColor={colors.text}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={styles.datePickerDoneButton}
-                          onPress={() => {
-                            console.log('Done button pressed, closing goal date picker');
-                            setShowGoalDatePicker(false);
-                          }}
-                        >
-                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
                 </>
               )}
 
@@ -1080,11 +996,7 @@ export default function CalendarScreen() {
                     style={styles.datePickerButton}
                     onPress={() => {
                       console.log('Date picker button pressed for reminder');
-                      const initialDate = newReminder.dueDate 
-                        ? new Date(newReminder.dueDate + 'T00:00:00') 
-                        : (selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date());
-                      setTempDate(initialDate);
-                      setShowReminderDatePicker(true);
+                      setShowReminderCalendarPicker(true);
                     }}
                   >
                     <IconSymbol name="calendar" color={colors.primary} size={20} />
@@ -1092,30 +1004,6 @@ export default function CalendarScreen() {
                       {formatDisplayDate(newReminder.dueDate || selectedDate)}
                     </Text>
                   </TouchableOpacity>
-
-                  {showReminderDatePicker && (
-                    <View style={styles.datePickerContainer}>
-                      <DateTimePicker
-                        value={tempDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={handleReminderDateChange}
-                        minimumDate={new Date()}
-                        textColor={colors.text}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={styles.datePickerDoneButton}
-                          onPress={() => {
-                            console.log('Done button pressed, closing reminder date picker');
-                            setShowReminderDatePicker(false);
-                          }}
-                        >
-                          <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
                 </>
               )}
 
@@ -1136,6 +1024,159 @@ export default function CalendarScreen() {
                 )}
               </TouchableOpacity>
             </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Event Calendar Picker Modal */}
+      <Modal
+        visible={showEventCalendarPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEventCalendarPicker(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowEventCalendarPicker(false)}
+        >
+          <Pressable 
+            style={styles.calendarPickerModal}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowEventCalendarPicker(false)}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <Calendar
+              onDayPress={handleEventCalendarDayPress}
+              markedDates={getCalendarMarkedDates(selectedDate)}
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: colors.textSecondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: '#FFFFFF',
+                todayTextColor: colors.primary,
+                dayTextColor: colors.text,
+                textDisabledColor: colors.textSecondary + '60',
+                arrowColor: colors.text,
+                monthTextColor: colors.text,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '500',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 13,
+              }}
+              style={styles.calendarPicker}
+              minDate={new Date().toISOString().split('T')[0]}
+              enableSwipeMonths={true}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Goal Calendar Picker Modal */}
+      <Modal
+        visible={showGoalCalendarPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGoalCalendarPicker(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowGoalCalendarPicker(false)}
+        >
+          <Pressable 
+            style={styles.calendarPickerModal}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Target Date</Text>
+              <TouchableOpacity onPress={() => setShowGoalCalendarPicker(false)}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <Calendar
+              onDayPress={handleGoalCalendarDayPress}
+              markedDates={getCalendarMarkedDates(newGoal.targetDate)}
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: colors.textSecondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: '#FFFFFF',
+                todayTextColor: colors.primary,
+                dayTextColor: colors.text,
+                textDisabledColor: colors.textSecondary + '60',
+                arrowColor: colors.text,
+                monthTextColor: colors.text,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '500',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 13,
+              }}
+              style={styles.calendarPicker}
+              minDate={new Date().toISOString().split('T')[0]}
+              enableSwipeMonths={true}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Reminder Calendar Picker Modal */}
+      <Modal
+        visible={showReminderCalendarPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowReminderCalendarPicker(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowReminderCalendarPicker(false)}
+        >
+          <Pressable 
+            style={styles.calendarPickerModal}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Due Date</Text>
+              <TouchableOpacity onPress={() => setShowReminderCalendarPicker(false)}>
+                <IconSymbol name="xmark" color={colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <Calendar
+              onDayPress={handleReminderCalendarDayPress}
+              markedDates={getCalendarMarkedDates(newReminder.dueDate)}
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: colors.textSecondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: '#FFFFFF',
+                todayTextColor: colors.primary,
+                dayTextColor: colors.text,
+                textDisabledColor: colors.textSecondary + '60',
+                arrowColor: colors.text,
+                monthTextColor: colors.text,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '500',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 13,
+              }}
+              style={styles.calendarPicker}
+              minDate={new Date().toISOString().split('T')[0]}
+              enableSwipeMonths={true}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -1311,6 +1352,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     padding: 24,
     maxHeight: '80%',
+  },
+  calendarPickerModal: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    maxHeight: '70%',
   },
   dateDetailsContent: {
     maxHeight: 500,
@@ -1494,25 +1542,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
-  datePickerContainer: {
-    marginBottom: 16,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  datePickerDoneButton: {
-    backgroundColor: colors.lavender,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  datePickerDoneButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  calendarPicker: {
+    borderRadius: 0,
   },
   submitButton: {
     backgroundColor: colors.lavender,
