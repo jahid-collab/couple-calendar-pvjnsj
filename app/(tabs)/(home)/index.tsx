@@ -46,7 +46,6 @@ export default function CalendarScreen() {
   const [showEventDatePicker, setShowEventDatePicker] = useState(false);
   const [showGoalDatePicker, setShowGoalDatePicker] = useState(false);
   const [showReminderDatePicker, setShowReminderDatePicker] = useState(false);
-  const [showCalendarDatePicker, setShowCalendarDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   
   const [newEvent, setNewEvent] = useState({
@@ -381,21 +380,6 @@ export default function CalendarScreen() {
     }
   };
 
-  const handleCalendarDateChange = (event: any, date?: Date) => {
-    console.log('handleCalendarDateChange called', { event, date });
-    
-    if (Platform.OS === 'android') {
-      setShowCalendarDatePicker(false);
-    }
-    
-    if (date) {
-      const dateString = date.toISOString().split('T')[0];
-      console.log('Setting calendar selectedDate to:', dateString);
-      setSelectedDate(dateString);
-      setTempDate(date);
-    }
-  };
-
   const formatDisplayDate = (dateString: string) => {
     if (!dateString) return 'Select date';
     const date = new Date(dateString + 'T00:00:00');
@@ -472,12 +456,6 @@ export default function CalendarScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.monthTitleButton}
-                onPress={() => {
-                  console.log('Month title pressed, opening calendar date picker');
-                  const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
-                  setTempDate(initialDate);
-                  setShowCalendarDatePicker(true);
-                }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.monthTitle}>November</Text>
@@ -499,77 +477,6 @@ export default function CalendarScreen() {
             <Text style={styles.pageTitle}>Schedule in your</Text>
             <Text style={styles.pageTitle}>calendar 📬</Text>
           </View>
-
-          {/* Selected Date Display with Date Picker */}
-          {selectedDate && (
-            <View style={styles.selectedDateContainer}>
-              <TouchableOpacity
-                style={styles.selectedDateButton}
-                onPress={() => {
-                  console.log('Selected date button pressed');
-                  const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
-                  setTempDate(initialDate);
-                  setShowCalendarDatePicker(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol name="calendar" color={colors.lavender} size={20} />
-                <Text style={styles.selectedDateText}>
-                  {formatDisplayDate(selectedDate)}
-                </Text>
-                <IconSymbol name="chevron.down" color={colors.textSecondary} size={16} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Calendar Date Picker Modal */}
-          {showCalendarDatePicker && (
-            <Modal
-              visible={showCalendarDatePicker}
-              animationType="slide"
-              transparent={true}
-              onRequestClose={() => setShowCalendarDatePicker(false)}
-            >
-              <Pressable 
-                style={styles.datePickerModalOverlay}
-                onPress={() => setShowCalendarDatePicker(false)}
-              >
-                <Pressable 
-                  style={styles.datePickerModalContent}
-                  onPress={(e) => e.stopPropagation()}
-                >
-                  <View style={styles.datePickerModalHeader}>
-                    <Text style={styles.datePickerModalTitle}>Select Date</Text>
-                    <TouchableOpacity onPress={() => setShowCalendarDatePicker(false)}>
-                      <IconSymbol name="xmark" color={colors.text} size={24} />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.datePickerWrapper}>
-                    <DateTimePicker
-                      value={tempDate}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={handleCalendarDateChange}
-                      textColor={colors.text}
-                    />
-                  </View>
-
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity
-                      style={styles.datePickerDoneButton}
-                      onPress={() => {
-                        console.log('Done button pressed, closing calendar date picker');
-                        setShowCalendarDatePicker(false);
-                      }}
-                    >
-                      <Text style={styles.datePickerDoneButtonText}>Done</Text>
-                    </TouchableOpacity>
-                  )}
-                </Pressable>
-              </Pressable>
-            </Modal>
-          )}
 
           {/* Calendar Week View */}
           <View style={styles.calendarContainer}>
@@ -1336,35 +1243,6 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     letterSpacing: -0.5,
   },
-  selectedDateContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  selectedDateButton: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  selectedDateText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
   calendarContainer: {
     paddingHorizontal: 20,
     marginBottom: 24,
@@ -1502,33 +1380,6 @@ const styles = StyleSheet.create({
   },
   dateDetailsContent: {
     maxHeight: 500,
-  },
-  datePickerModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  datePickerModalContent: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '60%',
-  },
-  datePickerModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  datePickerModalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  datePickerWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
